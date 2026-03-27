@@ -1,0 +1,6 @@
+{
+  "appId": "com.uniportal.app",
+  "appName": "UniPortal",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

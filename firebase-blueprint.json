@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Base user profile for students, staff, and admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "student", "staff", "applicant"] },
+        "name": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "level": { "type": "string" },
+        "matricNo": { "type": "string" },
+        "staffId": { "type": "string" },
+        "isVerified": { "type": "boolean" }
+      },
+      "required": ["uid", "email", "role", "name"]
+    },
+    "AdmissionApplication": {
+      "title": "Admission Application",
+      "description": "Student admission application details.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "credentials": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "faculty", "department", "status"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "University course details.",
+      "type": "object",
+      "properties": {
+        "courseCode": { "type": "string" },
+        "title": { "type": "string" },
+        "units": { "type": "number" },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "level": { "type": "string" }
+      },
+      "required": ["courseCode", "title", "units", "faculty", "department", "level"]
+    },
+    "Registration": {
+      "title": "Course Registration",
+      "description": "Student course registration for a semester.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "semester": { "type": "string" },
+        "level": { "type": "string" },
+        "courses": { "type": "array", "items": { "type": "string" } },
+        "isApproved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "semester", "level", "courses"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Fee payment records.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["tuition", "hostel", "admission"] },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "transactionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "type", "status", "createdAt"]
+    },
+    "Hostel": {
+      "title": "Hostel",
+      "description": "Hostel room and bed allocation.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "roomNumber": { "type": "string" },
+        "bedNumber": { "type": "string" },
+        "isOccupied": { "type": "boolean" },
+        "occupantId": { "type": "string" }
+      },
+      "required": ["name", "roomNumber", "bedNumber", "isOccupied"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Student academic results.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "grade": { "type": "string" },
+        "score": { "type": "number" },
+        "semester": { "type": "string" },
+        "level": { "type": "string" },
+        "gp": { "type": "number" }
+      },
+      "required": ["studentId", "courseId", "grade", "score", "semester", "level"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/applications/{appId}": {
+      "schema": "AdmissionApplication",
+      "description": "Admission applications."
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "University courses."
+    },
+    "/registrations/{regId}": {
+      "schema": "Registration",
+      "description": "Course registrations."
+    },
+    "/payments/{payId}": {
+      "schema": "Payment",
+      "description": "Payment records."
+    },
+    "/hostels/{hostelId}": {
+      "schema": "Hostel",
+      "description": "Hostel allocations."
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Academic results."
+    }
+  }
+}
