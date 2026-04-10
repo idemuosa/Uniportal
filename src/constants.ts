@@ -6,11 +6,12 @@ export const FACULTIES = [
   "Life Science",
   "Education",
   "Engineering",
-  "Veterinary Medicine"
+  "Veterinary Medicine",
+ 
 ];
 
 export const DEPARTMENTS: Record<string, string[]> = {
-  "College of Medicine": ["Medicine & Surgery", "Nursing", "Anatomy", "Physiology"],
+  "College of Medicine": ["Medicine & Surgery", "Nursing", "Anatomy", "Physiology", "Physiotherapy", "Medical Laboratory Science", "Radiology", "Medical Biochemistry"],
   "Faculty of Agric": ["Animal Science", "Crop Science", "Agric Economics"],
   "Pharmacy": ["Pharmacology", "Pharmaceutical Chemistry"],
   "Physical Science": ["Computer Science", "Physics", "Chemistry", "Mathematics"],

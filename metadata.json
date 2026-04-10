@@ -1,5 +1,5 @@
 {
-  "name": "UniPortal - Advanced University Management System",
+  "name": "UniPortal",
   "description": "A comprehensive university portal for administration, admission, course registration, fees payment, hostel allocation, and academic record management.",
   "requestFramePermissions": ["camera"]
 }

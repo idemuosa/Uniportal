@@ -1,1 +1,46 @@
 @import "tailwindcss";
+
+@theme {
+  --color-nysc-green: #008751;
+  --color-neon-purple: #008751;
+  --color-neon-magenta: #16a34a;
+  --color-neon-green: #22c55e;
+  
+  --shadow-neon-purple: 0 0 15px rgba(0, 135, 81, 0.2);
+  --shadow-neon-magenta: 0 0 15px rgba(22, 163, 74, 0.2);
+
+  /* Global Font Scale Reduction */
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+  --font-size-base: 0.9rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.15rem;
+  --font-size-2xl: 1.35rem;
+  --font-size-3xl: 1.65rem;
+  --font-size-4xl: 2.1rem;
+  --font-size-5xl: 2.7rem;
+  --font-size-6xl: 3.3rem;
+}
+
+@layer base {
+  html {
+    font-size: 15px; /* Base scaling */
+  }
+
+  body {
+    @apply bg-white text-[#008751] antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-slate-50/80 backdrop-blur-xl border border-[#008751]/10 rounded-[2.5rem] shadow-2xl;
+  }
+  
+  .neon-border {
+    @apply border border-[#008751]/20 shadow-[0_0_15px_rgba(0,135,81,0.05)];
+  }
+
+
+}
+
