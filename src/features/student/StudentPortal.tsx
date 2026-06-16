@@ -11,6 +11,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../../api/axios';
 import ClearanceForm from './ClearanceForm';
+import AttendanceLogger from '../../components/AttendanceLogger';
 
 interface StudentPortalProps {
   user: UserProfile;
@@ -179,44 +180,50 @@ export default function StudentPortal({ user }: StudentPortalProps) {
             </div>
 
             {/* 📊 SUMMARY SECTION */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-slate-50 backdrop-blur-xl p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-                <h3 className="text-xs font-black text-[#008751] uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
-                  <ShieldCheck className="w-5 h-5" /> Institutional Metadata
-                </h3>
-                <div className="grid grid-cols-2 gap-8">
-                  <div>
-                    <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Registered Faculty</p>
-                    <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.faculty || 'Standard'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Current Level</p>
-                    <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.level || '100L'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Verification ID</p>
-                    <p className="font-mono text-[#008751] text-xs font-black uppercase">{user.matricNo || 'N/A'}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                     <button onClick={() => navigate('/portal')} className="p-3 bg-[#008751]/3 rounded-xl border border-[#008751]/8 hover:bg-[#008751]/5 transition-all">
-                        <Fingerprint className="w-5 h-5 text-[#008751] opacity-40 hover:opacity-100" />
-                     </button>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1">
+                <AttendanceLogger user={user} />
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
-                 <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-slate-50 backdrop-blur-xl p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+                  <h3 className="text-xs font-black text-[#008751] uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
+                    <ShieldCheck className="w-5 h-5" /> Institutional Metadata
+                  </h3>
+                  <div className="grid grid-cols-2 gap-8">
                     <div>
-                      <h3 className="text-xl font-black text-[#008751] uppercase italic tracking-tighter mb-2">Session Clearance</h3>
-                      <p className="text-emerald-100/60 text-[10px] font-bold uppercase tracking-widest">Digital Audit status: verified</p>
+                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Registered Faculty</p>
+                      <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.faculty || 'Standard'}</p>
                     </div>
-                    <Link to="/payments" className="bg-white text-[#008751] p-5 rounded-2xl font-black text-xs uppercase tracking-widest italic flex items-center justify-between hover:bg-emerald-50 transition-all shadow-2xl mt-12">
-                      View Final Receipts
-                      <ArrowRight className="w-5 h-5" />
-                    </Link>
-                 </div>
+                    <div>
+                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Current Level</p>
+                      <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.level || '100L'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Verification ID</p>
+                      <p className="font-mono text-[#008751] text-xs font-black uppercase">{user.matricNo || 'N/A'}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <button onClick={() => navigate('/portal')} className="p-3 bg-[#008751]/3 rounded-xl border border-[#008751]/8 hover:bg-[#008751]/5 transition-all">
+                          <Fingerprint className="w-5 h-5 text-[#008751] opacity-40 hover:opacity-100" />
+                       </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
+                   <div className="relative z-10 h-full flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">Session Clearance</h3>
+                        <p className="text-emerald-100/60 text-[10px] font-bold uppercase tracking-widest">Digital Audit status: verified</p>
+                      </div>
+                      <Link to="/payments" className="bg-white text-[#008751] p-5 rounded-2xl font-black text-xs uppercase tracking-widest italic flex items-center justify-between hover:bg-emerald-50 transition-all shadow-2xl mt-12">
+                        View Final Receipts
+                        <ArrowRight className="w-5 h-5" />
+                      </Link>
+                   </div>
+                </div>
               </div>
             </div>
           </motion.div>

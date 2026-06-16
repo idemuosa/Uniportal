@@ -129,6 +129,19 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
       await api.post('/academics/applications/', payload);
 
+      // 🔔 Dispatch Institutional Notification
+      try {
+        await api.post('/notify', {
+          to: user.email,
+          subject: 'Admission Application Received',
+          body: `Dear ${user.name}, your application for <b>${formData.type}</b> in the department of <b>${formData.department}</b> has been received and is under review.`,
+          type: 'success',
+          userId: user.uid
+        });
+      } catch (notifyErr) {
+        console.warn('Notification failed but application submitted');
+      }
+
       toast.success('Professional Application Submitted');
       window.location.reload();
     } catch (err) {
@@ -388,14 +401,14 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         )}
 
         {step === 'biometrics' && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#008751] p-10 rounded-[3.5rem] border border-[#008751]/8 space-y-8">
-            <div className="flex items-center gap-4 text-white">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-gradient-to-br from-emerald-50 via-slate-50 to-blue-50 p-10 rounded-[3.5rem] border border-[#008751]/15 space-y-8 shadow-lg">
+            <div className="flex items-center gap-4 text-[#008751]">
                <div className="p-3 bg-[#008751]/5 rounded-xl"><Fingerprint className="w-6 h-6" /></div>
                <h2 className="text-2xl font-black tracking-tighter uppercase italic">Secure Biometric Sequencing</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-              <div className="md:col-span-5 flex justify-center">
+            <div className="space-y-8">
+              <div className="flex justify-center">
                 <div className="max-w-[280px] w-full">
                   <CameraCapture 
                     onCaptureAll={setBiometricBlobs} 
@@ -404,12 +417,12 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                 </div>
               </div>
               
-              <div className="md:col-span-7 space-y-6">
-                <div className="bg-white p-6 rounded-3xl border border-[#008751]/8">
+              <div className="space-y-6">
+                <div className="bg-[#008751]/5 p-6 rounded-3xl border border-[#008751]/8">
                   <h3 className="text-[#008751] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4" /> Integrity Verification
                   </h3>
-                  <p className="text-white/70 text-[10px] leading-relaxed font-bold uppercase tracking-wider">
+                  <p className="text-[#008751]/70 text-[10px] leading-relaxed font-bold uppercase tracking-wider">
                     Please ensure you are in a well-lit environment. Our Digital Registry requires a clear Capture of your 
                     <span className="text-[#008751] mx-1 underline italic">Face</span> and 
                     <span className="text-[#008751] mx-1 underline italic">Both Index Fingers</span>.

@@ -13,6 +13,7 @@ class User(AbstractUser):
     department = models.CharField(max_length=100, blank=True, null=True)
     level = models.CharField(max_length=10, default='100L')
     matricNo = models.CharField(max_length=30, blank=True, null=True, unique=True)
+    examination_number = models.CharField(max_length=30, blank=True, null=True, unique=True, help_text="Examination registration number for result checking")
     isVerified = models.BooleanField(default=False)
 
     def __str__(self):

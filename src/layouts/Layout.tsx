@@ -2,9 +2,11 @@ import { ReactNode, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth, signOut } from '../firebase';
 import { UserProfile } from '../types';
-import { 
+import { useSocket } from '../hooks/useSocket';
+import AITutor from '../components/AITutor';
+import {
   GraduationCap, LogOut, User as UserIcon, ShieldCheck, 
-  Home, BookOpen, LayoutGrid, FileText, CreditCard, Menu, X 
+  Home, BookOpen, LayoutGrid, FileText, CreditCard, Menu, X, Bot
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -16,6 +18,9 @@ export default function Layout({ children, user }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Initialize Real-time Socket Connection
+  useSocket(user?.uid);
 
   const handleLogout = async () => {
     try {
@@ -36,6 +41,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#008751] flex flex-col selection:bg-[#008751] selection:text-white">
+      <AITutor user={user} />
       {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-[#008751]/10">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">

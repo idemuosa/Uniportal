@@ -193,5 +193,28 @@ service cloud.firestore {
 
       allow write: if isAdmin() || isStaff();
     }
+
+    // ===============================================================
+    // ATTENDANCE & SIS
+    // ===============================================================
+
+    match /attendance/{id} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.studentId));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.studentId);
+    }
+
+    match /timetables/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isStaff();
+    }
+
+    // ===============================================================
+    // LEARNING MATERIALS (LMS)
+    // ===============================================================
+
+    match /materials/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isStaff();
+    }
   }
 }

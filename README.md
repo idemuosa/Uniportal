@@ -1,20 +1,84 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# School Portal - AI Powered Management System
 
-# Run and deploy your AI Studio app
+A comprehensive school portal built with modern web technologies, featuring real-time communication and AI-driven features.
 
-This contains everything you need to run your app locally.
+## 🚀 Tech Stack
 
-View your app in AI Studio: https://ai.studio/apps/b585e209-47cd-477a-a701-063d7cd3d8f9
+- **Frontend:** React (Vite)
+- **Backend:** Node.js (Express)
+- **Real-time:** Socket.io
+- **Database:** Firebase (Firestore)
+- **Deployment:** Railway
+- **Mobile/Desktop:** Capacitor & Electron support
 
-## Run Locally
+## 🛠️ Getting Started
 
-**Prerequisites:**  Node.js
+### Prerequisites
 
+- Node.js (v18 or higher)
+- npm or yarn
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd schoolportal
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Configuration:**
+   Create a `.env.local` file in the root and add your configuration:
+   ```env
+   VITE_FIREBASE_API_KEY=your_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_domain
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   # Add other necessary keys
+   ```
+
+### Running Locally
+
+- **Start Frontend (Vite):**
+  ```bash
+  npm run dev
+  ```
+- **Start WebSocket Server:**
+  ```bash
+  npm run start:ws
+  ```
+
+## 🌟 Productive Portal Features
+
+- **RBAC & Security:** Robust role-based access control with Firestore rules.
+- **Academic SIS:** Attendance logging and course registration workflows.
+- **Treasury:** Verified payment processing with real-time confirmation.
+- **AI Assistant:** Google Gemini-powered academic tutor integrated into the layout.
+- **Real-time:** Instant notifications via Socket.io for all critical updates.
+- **Logging:** Comprehensive backend logging with Winston.
+
+## 🚢 Deployment (Railway)
+
+This project is configured for deployment on **Railway**.
+
+### Do I need Docker?
+
+**Short answer:** No, but it's recommended.
+
+- **Without Docker:** Railway's [Nixpacks](https://nixpacks.com/) will automatically detect your Node.js environment and build the project. This is the simplest way.
+- **With Docker:** Providing a `Dockerfile` gives you full control over the build environment. This is useful if you want to ensure the exact same environment between development and production, or if you need to run multiple processes (like the API and WebSocket server) in a specific way.
+
+### Deployment Steps
+
+1. Connect your GitHub repository to [Railway](https://railway.app/).
+2. Railway will automatically detect the project.
+3. Configure your Environment Variables in the Railway dashboard.
+4. (Optional) Add a `Dockerfile` if you need custom build steps.
+
+## 📱 Mobile & Desktop
+
+- **Android/iOS:** Uses Capacitor. Run `npm run cap:sync` to sync web assets.
+- **Desktop:** Uses Electron. Run `npm run electron:dev` for development.

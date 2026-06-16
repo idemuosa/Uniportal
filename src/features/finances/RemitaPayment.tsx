@@ -61,6 +61,15 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // 💳 Central Treasury Verification (Productive Endpoint)
+      const verifyRes = await api.post('/payments/verify', {
+        uid: user.uid,
+        amount: amount,
+        type: type,
+        reference: rrr
+      });
+
+      // 📜 Legacy local log (optional, keeping for consistency)
       await api.post('/finances/payments/', {
         type: type,
         amount: amount,
