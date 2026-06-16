@@ -254,15 +254,15 @@ export default function PostgradAdmissionForm() {
 
           {/* Biometrics Step */}
           {step === 'biometrics' && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50 p-10 rounded-3xl border border-indigo-200 shadow-sm space-y-8">
-              <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50 p-6 md:p-10 rounded-3xl border border-indigo-200 shadow-sm space-y-6">
+              <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                 <Fingerprint className="w-8 h-8 text-indigo-600" />
                 Biometric Verification
               </h2>
               
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="flex justify-center">
-                  <div className="max-w-[280px] w-full">
+                  <div className="max-w-[360px] w-full">
                     <CameraCapture 
                       onCaptureAll={setBiometricBlobs} 
                       onClear={() => setBiometricBlobs(null)} 

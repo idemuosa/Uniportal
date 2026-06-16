@@ -2,14 +2,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'sonner';
-import { Lock, Mail, ShieldCheck, Eye, EyeOff, ArrowRight, User } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Eye, EyeOff, ArrowRight, User, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
+
+const getPasswordStrength = (password: string) => {
+  let strength = 0;
+  if (password.length >= 8) strength += 20;
+  if (/[A-Z]/.test(password)) strength += 20;
+  if (/[a-z]/.test(password)) strength += 20;
+  if (/[0-9]/.test(password)) strength += 20;
+  if (/[^A-Za-z0-9]/.test(password)) strength += 20;
+  return strength;
+};
 
 export default function AdminAuth() {
   const [name, setName] = useState('');
   const [secretCode, setSecretCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,13 +44,25 @@ export default function AdminAuth() {
           setLoading(false);
           return;
         }
+
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+
+        if (getPasswordStrength(password) < 80) {
+          toast.error('Password too weak — must include symbols/special characters');
+          setLoading(false);
+          return;
+        }
         
         const names = name.split(' ');
         const firstName = names[0] || '';
         const lastName = names.slice(1).join(' ') || '';
 
         await api.post('/accounts/register/', {
-          username: email, // Use full email for uniqueness
+          username: email,
           email,
           password,
           first_name: firstName,
@@ -47,7 +70,7 @@ export default function AdminAuth() {
           role: 'admin'
         });
 
-        toast.success('Administrative Node Initialized Successfully. Please Log In.');
+        toast.success('Admin account created successfully.');
         setSignUpMode(false);
       } else {
         const response = await api.post('/token/', {
@@ -61,7 +84,7 @@ export default function AdminAuth() {
         // Verify role
         const userResponse = await api.get('/accounts/user/');
         if (userResponse.data.role === 'admin') {
-          toast.success('Administrative Access Granted');
+          toast.success('Welcome back, Admin');
           window.location.href = '/admin';
         } else {
           localStorage.removeItem('access_token');
@@ -71,61 +94,66 @@ export default function AdminAuth() {
       }
     } catch (error: any) {
       console.error('Admin Auth error:', error);
-      const errorMsg = error.response?.data?.detail || 'Process Interrupted: Unauthorized Attempt';
-      toast.error(errorMsg);
+      let errorMsg = 'Authentication failed';
+
+      if (!error.response) {
+        errorMsg = 'Server unreachable. Is the Django backend running on port 8000?';
+      } else {
+        errorMsg = error.response.data?.detail ||
+                   error.response.data?.error ||
+                   (error.response.data && typeof error.response.data === 'object' ? Object.values(error.response.data).flat()[0] : null) ||
+                   'Invalid credentials';
+      }
+
+      toast.error(String(errorMsg));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center py-12 px-6 relative overflow-hidden font-sans selection:bg-green-500 selection:text-[ #22c55e]">
-      {/* ATMOSPHERIC BACKGROUND */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#008751]/5 rounded-full blur-[150px]" />
-      </div>
+    <div className="min-h-screen flex flex-col justify-center items-center py-12 px-6 bg-slate-50 font-sans selection:bg-emerald-500 selection:text-white">
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full space-y-8 relative z-10"
       >
         {/* LOGO & HEADER */}
-        <div className="text-center space-y-6">
-          <div className="inline-flex p-5 bg-slate-50 border border-[#22c55e]/15">
-            <ShieldCheck className="w-12 h-12 text-[#22c55e]" />
+        <div className="text-center space-y-4">
+          <div className="inline-flex p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <ShieldCheck className="w-8 h-8 text-emerald-600" />
           </div>
           <div>
-            <h6 className="text-3xl font-black text-[#22c55e] tracking-tighter">{signUpMode ? 'Registry Node' : 'Admin Login'}</h6>
-            <p className="text-sm font-black text-[#22c55e] uppercase tracking-[0.3em] mt-2">{signUpMode ? 'Authorized Admin' : 'Authenticate'}</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{signUpMode ? 'Admin Registry' : 'Admin Login'}</h2>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mt-1">Institutional Access Control</p>
           </div>
         </div>
 
         {/* LOGIN FORM */}
-        <div className="bg-white border border-[#22c55e]/8 p-10 shadow-[0_0_40px_rgba(22,163,74,0.1)]">
+        <div className="bg-white border border-slate-200 p-10 rounded-[2rem] shadow-sm">
           <form onSubmit={handleAdminLogin} className="space-y-6">
             <div className="space-y-4">
               {signUpMode && (
                 <>
                   <div className="relative group">
-                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]/10 group-focus-within:text-[#008751] transition-colors" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                     <input
                       type="text"
                       required
-                      placeholder="Enter Your Name"
-                      className="w-full bg-slate-50 border border-[#22c55e]/10 p-2 pl-10 text-sm font-black text-[#22c55e] placeholder:text-[#22c55e]/30 focus:ring-2 ring-green-500 focus:border-[#008751] outline-none transition-all tracking-widest"
+                      placeholder="Your Full Name"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />  
                   </div>
                   <div className="relative group">
-                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]/30 group-focus-within:text-[#22c55e] transition-colors" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                     <input
                       type="password"
                       required
                       placeholder="SECRET ACCESS KEY"
-                      className="w-full bg-slate-50 border border-[#22c55e]/10 p-2 pl-14 text-sm font-black text-[#22c55e] placeholder:text-[#22c55e]/30 focus:ring-2 ring-green-500 focus:border-[#008751] outline-none transition-all uppercase tracking-widest"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all uppercase tracking-widest"
                       value={secretCode}
                       onChange={(e) => setSecretCode(e.target.value)}
                     />
@@ -133,12 +161,12 @@ export default function AdminAuth() {
                 </>
               )}
               <div className="relative group">
-                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]/30 group-focus-within:text-[#22c55e] transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                 <input
                   type="email"
                   required
-                  placeholder="Email Address"
-                  className="w-full h-10 bg-slate-50 border border-[#008751]/10 p-2 pl-10 text-sm font-black text-[#008751] placeholder:text-[#008751]/30 focus:ring-2 ring-green-200 focus:border-[#008751] outline-none transition-all tracking-widest"
+                  placeholder="Admin Email Address"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -146,49 +174,77 @@ export default function AdminAuth() {
 
               {!resetMode && (
                 <div className="relative group">
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#008751]/30 group-focus-within:text-[#008751] transition-colors" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="Password"
-                    className="w-full bg-slate-50 border border-[#008751]/10 p-2 pl-14 h-10 text-sm font-black text-[#008751] placeholder:text-[#008751]/30 focus:ring-2 ring-green-500 focus:border-[#008751] outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-6 top-1/2 -translate-y-1/2 p-2 hover:bg-[#008751]/10 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4 text-[#008751]/30" /> : <Eye className="w-4 h-4 text-[#008751]/30" />}
+                    {showPassword ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
                   </button>
+                </div>
+              )}
+
+              {signUpMode && (
+                <div className="relative group">
+                  <CheckCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Confirm Password"
+                    className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {signUpMode && (
+                <div className="px-1 pt-2 space-y-2">
+                  <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-slate-400 italic">
+                    <span>Security Rating</span>
+                    <span>{getPasswordStrength(password)}%</span>
+                  </div>
+                  <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${getPasswordStrength(password)}%` }} className={`h-full rounded-full ${getPasswordStrength(password) < 80 ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                  </div>
+                  <p className="text-[8px] font-medium text-slate-400 uppercase leading-relaxed">
+                    * Required: Symbols (!@#$%) + Uppercase + Numbers
+                  </p>
                 </div>
               )}
             </div>
 
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-10 bg-[#008751] border border-[#008751] text-white font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:brightness-125 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              className="w-full py-4 bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/10 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
             >
               {loading ? (
-                <div className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {resetMode ? 'INITIALIZE RECOVERY' : signUpMode ? 'CREATE ADMIN' : 'AUTHORIZE'}
+                  {resetMode ? 'Initialize Recovery' : signUpMode ? 'Create Admin Account' : 'Authorize Login'}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-[#008751]/5 text-center">
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <button
               onClick={() => setSignUpMode(!signUpMode)}
-              className="text-xs font-black text-[#008751]/30 uppercase tracking-[0.3em] hover:text-[#008751] transition-colors"
+              className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-emerald-600 transition-colors"
             >
-              {signUpMode ? 'Return to Authorization' : 'Request Administrative Node Access'}
+              {signUpMode ? '← Return to Login' : 'Request Registry Access'}
             </button>
           </div>
         </div>
@@ -196,5 +252,3 @@ export default function AdminAuth() {
     </div>
   );
 }
-
-

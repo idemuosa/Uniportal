@@ -47,7 +47,7 @@ export default function Layout({ children, user }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="flex justify-between h-20 items-center gap-6">
             <Link to="/" className="flex items-center gap-3 group shrink-0" onClick={() => setIsMenuOpen(false)}>
-              <div className="w-12 h-12 bg-slate-50 border border-[#008751]/20 text-[#008751] rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110">
+              <div className="w-12 h-12 bg-slate-50 border border-[#008751]/20 text-[#008751] rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110">
                 <GraduationCap className="w-7 h-7" />
               </div>
               <div className="flex flex-col">
@@ -75,7 +75,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
             <div className="flex items-center gap-4 shrink-0">
               {user ? (
-                <div className="hidden sm:flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-2xl border border-[#008751]/10">
+                <div className="hidden sm:flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-[#008751]/10">
                   <div className="text-right">
                     <div className="text-xs font-black uppercase tracking-tighter">{user.name.split(' ')[0]}</div>
                     <div className="text-[7px] font-black opacity-30 uppercase tracking-[0.3em]">Verified {user.role}</div>
@@ -100,7 +100,7 @@ export default function Layout({ children, user }: LayoutProps) {
                   to="/auth"
                   className="bg-[#008751] text-white px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider text-xs hover:bg-[#006e41] transition active:scale-95 hidden sm:block"
                 >
-                  Gateway Login
+                  Login
                 </Link>
               )}
 
@@ -134,7 +134,7 @@ export default function Layout({ children, user }: LayoutProps) {
                   <Link 
                     to="/admin" 
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-amber-50 text-amber-600 font-bold uppercase tracking-widest text-sm border border-amber-200"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 text-amber-600 font-bold uppercase tracking-widest text-sm border border-amber-200"
                   >
                     <ShieldCheck className="w-5 h-5" /> Admin Control
                   </Link>
@@ -142,7 +142,7 @@ export default function Layout({ children, user }: LayoutProps) {
                 <div className="pt-4 mt-4 border-t border-[#008751]/10">
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-red-50 text-red-600 font-bold uppercase tracking-widest text-sm border border-red-100"
+                    className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-red-50 text-red-600 font-bold uppercase tracking-widest text-sm border border-red-100"
                   >
                     <LogOut className="w-5 h-5" /> Sign Out
                   </button>
@@ -192,7 +192,7 @@ export default function Layout({ children, user }: LayoutProps) {
               <FileText className="w-6 h-6" />
            </div>
  
-           <p className="text-[11px] font-black text-[ #22c55e]/30 uppercase tracking-[0.7em]">
+           <p className="text-[11px] font-black text-[ #22c55e]/20 uppercase tracking-[0.1em]">
              © 2026 Federal University Lukke • Central Registry Synchronization Active
            </p>
         </div>
@@ -225,7 +225,7 @@ function MobileNavLink({ to, children, active, onClick }: { to: string; children
       to={to}
       onClick={onClick}
       className={`
-        block p-5 rounded-2xl text-lg font-black uppercase tracking-widest transition-all
+        block p-5 rounded-xl text-lg font-black uppercase tracking-widest transition-all
         ${active 
           ? 'bg-[#008751] text-white shadow-xl shadow-[#008751]/20' 
           : 'bg-slate-50 text-[#008751]/60 border border-[#008751]/5'

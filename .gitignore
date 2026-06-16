@@ -6,3 +6,23 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Databases
+*.sqlite3
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -146,7 +146,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
         <div className="bg-slate-50 border border-[#008751]/8 rounded-2xl p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <p className="text-[10px] font-bold text-[#008751]/30 uppercase tracking-widest mb-1">Reference (RRR)</p>
-            <p className="font-mono text-2xl font-black text-[#008751] tracking-widest">{rrr}</p>
+            <p className="font-sans text-2xl font-black text-[#008751] tracking-widest">{rrr}</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-[#008751]/30 uppercase tracking-widest mb-1">Amount</p>
@@ -214,7 +214,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
                     onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                     placeholder="0000  0000  0000  0000"
                     maxLength={19}
-                    className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-mono text-lg font-black tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 focus:bg-white outline-none transition-all"
+                    className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-sans text-lg font-black tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 focus:bg-white outline-none transition-all"
                   />
                 </div>
 
@@ -226,7 +226,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
                       onChange={(e) => setExpiry(formatExpiry(e.target.value))}
                       placeholder="MM/YY"
                       maxLength={5}
-                      className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-mono font-black text-center tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 outline-none transition-all"
+                      className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-sans font-black text-center tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 outline-none transition-all"
                     />
                   </div>
                   <div>
@@ -237,7 +237,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
                       onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
                       placeholder="•••"
                       maxLength={3}
-                      className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-mono font-black text-center tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 outline-none transition-all"
+                      className="w-full p-4 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] font-sans font-black text-center tracking-widest placeholder:text-[#008751]/20 focus:border-[#008751]/30 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
                     </div>
 
                     <div className="bg-white border border-[#008751]/8 p-3 rounded-lg flex justify-between items-center mt-2">
-                      <span className="font-mono text-lg font-black text-[#008751] tracking-widest">{bank.accountNumber}</span>
+                      <span className="font-sans text-lg font-black text-[#008751] tracking-widest">{bank.accountNumber}</span>
                       <button 
                         onClick={() => copyToClipboard(bank.accountNumber)}
                         className="flex items-center gap-1.5 bg-[#008751]/8 px-3 py-1.5 rounded-lg hover:bg-[#008751]/15 transition-colors"
@@ -324,7 +324,7 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
                   <div key={item.bank} className="bg-slate-50 border border-[#008751]/5 p-3 rounded-lg flex justify-between items-center hover:border-[#008751]/15 transition-all">
                     <div>
                       <p className="text-xs font-bold text-[#008751] uppercase tracking-wide">{item.bank}</p>
-                      <p className="text-[10px] font-mono text-[#008751]/40 mt-0.5">{item.code}</p>
+                      <p className="text-[10px] font-sans text-[#008751]/40 mt-0.5">{item.code}</p>
                     </div>
                     <button onClick={() => { navigator.clipboard.writeText(item.code); toast.success(`${item.bank} USSD copied!`); }} className="bg-[#008751]/8 p-2 rounded-lg hover:bg-[#008751]/15 transition-colors">
                       <Copy className="w-3 h-3 text-[#008751]" />

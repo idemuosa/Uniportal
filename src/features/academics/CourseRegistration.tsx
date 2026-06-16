@@ -98,7 +98,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
   if (registration) {
     return (
       <div className="max-w-4xl mx-auto space-y-8 py-6">
-        <div className="bg-white/40 p-12 rounded-[3.5rem] shadow-2xl border border-[#008751]/5 relative overflow-hidden">
+        <div className="bg-white/40 p-12 rounded-xl shadow-2xl border border-[#008751]/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl opacity-50" />
           <div className="flex justify-between items-start mb-12 relative z-10">
             <div className="space-y-4">
@@ -117,7 +117,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
 
           <div className="space-y-4 relative z-10">
             {registration.courses.map(code => (
-              <div key={code} className="p-6 bg-slate-50 rounded-[2rem] border border-[#008751]/5 flex justify-between items-center group hover:bg-white/40 hover:border-[#008751]/15 hover:shadow-xl transition-all duration-500">
+              <div key={code} className="p-6 bg-slate-50 rounded-xl border border-[#008751]/5 flex justify-between items-center group hover:bg-white/40 hover:border-[#008751]/15 hover:shadow-xl transition-all duration-500">
                 <div className="flex items-center gap-6">
                    <div className="w-2 h-2 rounded-full bg-green-400 group-hover:scale-150 transition-transform" />
                    <span className="font-black text-xl text-[#008751] tracking-tighter uppercase italic">{code}</span>
@@ -132,7 +132,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
             ))}
           </div>
 
-          <div className="mt-12 p-8 bg-slate-50 rounded-[2.5rem] border border-indigo-100/50 text-center">
+          <div className="mt-12 p-8 bg-slate-50 rounded-xl border border-indigo-100/50 text-center">
              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#008751] mb-3">Electronic Verification Slip</p>
              <p className="text-[10px] text-[#008751] leading-relaxed font-medium italic">This registration is digitally signed and serves as official proof of enrollment until senate approval.</p>
           </div>
@@ -144,7 +144,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
   return (
     <div className="max-w-6xl mx-auto space-y-10 py-6">
       {/* ðŸš€ REGISTRATION HEADER */}
-      <div className="bg-slate-50 p-10 rounded-[3rem] shadow-2xl border border-[#008751]/5 flex flex-col md:flex-row justify-between items-center gap-8 relative overflow-hidden group">
+      <div className="bg-slate-50 p-10 rounded-xl shadow-2xl border border-[#008751]/5 flex flex-col md:flex-row justify-between items-center gap-8 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-green-8000/5 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000" />
         <div className="relative z-10 space-y-2">
            <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
         {/* ðŸ“š COURSE SELECTION */}
         <div className="xl:col-span-8 space-y-6">
-           <div className="bg-slate-50 p-10 rounded-[3.5rem] shadow-2xl border border-[#008751]/10">
+           <div className="bg-slate-50 p-10 rounded-xl shadow-2xl border border-[#008751]/10">
               <h3 className="text-xl font-black text-[#008751] tracking-tight uppercase italic mb-8 flex items-center gap-3">
                  <div className="p-2 bg-slate-50 rounded-xl"><Plus className="w-5 h-5 text-[#008751]" /></div>
                  Available Course Units
@@ -176,7 +176,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
                    <button
                      key={course.courseCode}
                      onClick={() => toggleCourse(course)}
-                     className={`w-full p-6 md:p-8 rounded-[2.5rem] border transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group ${
+                     className={`w-full p-6 md:p-8 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group ${
                        selectedCourses.find(c => c.courseCode === course.courseCode) 
                        ? 'bg-[#008751] border-[#008751] shadow-xl shadow-indigo-200 text-[#008751]' 
                        : 'bg-slate-50 border-[#008751]/10 hover:bg-slate-50 hover:border-indigo-100 text-[#008751]'
@@ -207,7 +207,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
 
         {/* ðŸ“Š SUMMARY TRACKER */}
         <div className="xl:col-span-4 space-y-8">
-           <div className="bg-white p-10 rounded-[4rem] text-[#008751] space-y-10 shadow-2xl sticky top-24 relative overflow-hidden group">
+           <div className="bg-white p-10 rounded-2xl text-[#008751] space-y-10 shadow-2xl sticky top-24 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-48 h-48 bg-[#008751]/3 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:scale-125 transition-transform" />
               
               <div className="space-y-4 relative z-10">
@@ -244,7 +244,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
               </div>
 
               <div className="pt-6 relative z-10">
-                 <div className="bg-[#008751]/3 p-8 rounded-[2rem] border border-[#008751]/5 text-center group-hover:bg-[#008751]/5 transition-colors">
+                 <div className="bg-[#008751]/3 p-8 rounded-xl border border-[#008751]/5 text-center group-hover:bg-[#008751]/5 transition-colors">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#008751]/35 mb-2">Aggregate Units Locked</p>
                     <p className="text-6xl font-black tracking-tighter italic shadow-sm">{selectedCourses.reduce((acc, c) => acc + c.units, 0)}</p>
                  </div>

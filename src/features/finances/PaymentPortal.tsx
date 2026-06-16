@@ -187,7 +187,7 @@ const PaymentPortal: React.FC<{ user: UserProfile }> = ({ user }) => {
                   </div>
                   
                   <div className="bg-white border border-[#008751]/8 p-3 rounded-lg flex justify-between items-center my-2">
-                    <span className="font-mono text-xl font-black text-[#008751] tracking-widest">{bank.accountNumber}</span>
+                    <span className="font-sans text-xl font-black text-[#008751] tracking-widest">{bank.accountNumber}</span>
                     <div className="bg-[#008751]/8 p-1.5 rounded-lg">
                       <History className="text-[#008751] w-3 h-3" />
                     </div>
@@ -236,7 +236,7 @@ const PaymentPortal: React.FC<{ user: UserProfile }> = ({ user }) => {
                    </div>
                    <div className="flex justify-between border-b border-[#008751]/5 pb-2">
                      <span className="text-[#008751]/40">Reference:</span>
-                     <span className="font-mono text-xs text-[#008751]">{lastPayment.reference}</span>
+                     <span className="font-sans text-xs text-[#008751]">{lastPayment.reference}</span>
                    </div>
                    <div className="flex justify-between border-b border-[#008751]/5 pb-2 items-center">
                      <span className="text-[#008751]/40">Status:</span>
@@ -294,7 +294,7 @@ const PaymentPortal: React.FC<{ user: UserProfile }> = ({ user }) => {
                       <p className="text-xs font-black text-[#008751]">₦{Number(p.amount).toLocaleString()}</p>
                     </div>
                     <div className="flex justify-between items-end mt-1">
-                      <p className="text-[8px] font-mono text-[#008751]/30">{p.reference}</p>
+                      <p className="text-[8px] font-sans text-[#008751]/30">{p.reference}</p>
                       <p className="text-[8px] font-medium text-[#008751]/25">{new Date(p.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>

@@ -116,7 +116,7 @@ export default function LoanApplicationForm({ user }: LoanApplicationFormProps) 
               <div className="space-y-6">
                 <div className="flex justify-between items-center ml-2">
                    <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">Requested Capital (#)</label>
-                   <span className="font-mono text-[#008751] font-black text-lg">#{amount.toLocaleString()}</span>
+                   <span className="font-sans text-[#008751] font-black text-lg">#{amount.toLocaleString()}</span>
                 </div>
                 <div className="relative">
                   <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 text-emerald-500/20" />

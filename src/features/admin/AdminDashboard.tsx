@@ -148,7 +148,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Control</h1>
-            <p className="text-slate-500 text-sm font-medium">UniPortal Administrative Node</p>
+            <p className="text-slate-500 text-sm font-medium">UniPortal Administrative</p>
           </div>
 
           <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide">

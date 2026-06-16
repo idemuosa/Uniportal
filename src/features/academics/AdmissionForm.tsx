@@ -157,7 +157,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   if (application) {
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500">
-        <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-[#008751]/10 relative overflow-hidden group">
+        <div className="bg-slate-50 p-12 rounded-xl border border-[#008751]/10 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-8000/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-125 transition-transform duration-1000" />
           <div className="relative z-10 text-center space-y-6">
             <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
@@ -193,7 +193,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
       {/* PROGRESS TRACKER */}
-      <div className="flex justify-between items-center bg-slate-50 p-6 rounded-[2.5rem] border border-[#008751]/10">
+      <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-[#008751]/10">
         {stepItems.map((s, i) => (
           <div key={s.id} className="flex flex-col items-center gap-2 flex-1 relative">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 z-10 ${
@@ -211,14 +211,14 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
       <AnimatePresence mode="wait">
         {step === 'program' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-slate-50 p-12 rounded-[3.5rem] border border-[#008751]/10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-slate-50 p-12 rounded-xl border border-[#008751]/10">
             <h2 className="text-2xl font-black text-[#008751] uppercase tracking-tighter italic mb-8">Select Admission Stream</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {['Undergraduate Full-Time', 'Direct Entry (200L)', 'Postgraduate (Masters)', 'Distance Learning (CDL)'].map(t => (
                 <button
                   key={t}
                   onClick={() => { setFormData({ ...formData, type: t }); setStep('biodata'); }}
-                  className="p-8 border-2 border-slate-50 rounded-3xl text-left hover:border-[#008751] hover:bg-white transition-all group"
+                  className="p-8 border-2 border-slate-50 rounded-2xl text-left hover:border-[#008751] hover:bg-white transition-all group"
                 >
                   <p className="text-[#008751] text-[10px] font-black uppercase tracking-[0.3em] mb-2 opacity-40 group-hover:opacity-100">Standard Program</p>
                   <p className="text-lg font-black text-[#008751] uppercase tracking-tighter italic">{t}</p>
@@ -229,7 +229,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         )}
 
         {step === 'biodata' && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-[3.5rem] border border-[#008751]/10 space-y-8">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-xl border border-[#008751]/10 space-y-8">
             <div className="flex items-center gap-4">
                <div className="p-3 bg-white rounded-xl text-[#008751]"><User className="w-6 h-6" /></div>
                <h2 className="text-2xl font-black text-[#008751] tracking-tighter uppercase italic">Biological Identity</h2>
@@ -304,7 +304,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         )}
 
         {step === 'kin' && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-[3.5rem] border border-[#008751]/10 space-y-8">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-xl border border-[#008751]/10 space-y-8">
             <div className="flex items-center gap-4">
                <div className="p-3 bg-amber-50 rounded-xl text-amber-600"><ShieldCheck className="w-6 h-6" /></div>
                <h2 className="text-2xl font-black text-[#008751] tracking-tighter uppercase italic">Emergency Contact (Next of Kin)</h2>
@@ -324,7 +324,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         )}
 
         {step === 'academic' && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-[3.5rem] border border-[#008751]/10 space-y-10">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-slate-50 p-10 rounded-xl border border-[#008751]/10 space-y-10">
             <div className="flex items-center gap-4">
                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><GraduationCap className="w-6 h-6" /></div>
                <h2 className="text-2xl font-black text-[#008751] tracking-tighter uppercase italic">Academic Records</h2>
@@ -394,22 +394,21 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                </div>
             </div>
 
-            <button onClick={() => setStep('biometrics')} className="w-full bg-white text-[#008751] py-6 rounded-3xl font-black uppercase text-sm tracking-widest hover:bg-white transition-all border border-[#008751]/10">
+            <button onClick={() => setStep('biometrics')} className="w-full bg-white text-[#008751] py-6 rounded-xl font-black uppercase text-sm tracking-widest hover:bg-white transition-all border border-[#008751]/10">
                Initialize Biometrics
             </button>
           </motion.div>
         )}
-
         {step === 'biometrics' && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-gradient-to-br from-emerald-50 via-slate-50 to-blue-50 p-10 rounded-[3.5rem] border border-[#008751]/15 space-y-8 shadow-lg">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-gradient-to-br from-emerald-50 via-slate-50 to-blue-50 p-6 md:p-10 rounded-xl border border-[#008751]/15 space-y-6 shadow-lg">
             <div className="flex items-center gap-4 text-[#008751]">
                <div className="p-3 bg-[#008751]/5 rounded-xl"><Fingerprint className="w-6 h-6" /></div>
-               <h2 className="text-2xl font-black tracking-tighter uppercase italic">Secure Biometric Sequencing</h2>
+               <h2 className="text-xl font-black tracking-tighter uppercase italic">Biometric Sequencing</h2>
             </div>
             
-            <div className="space-y-8">
+            <div className="space-y-6">
               <div className="flex justify-center">
-                <div className="max-w-[280px] w-full">
+                <div className="max-w-[360px] w-full">
                   <CameraCapture 
                     onCaptureAll={setBiometricBlobs} 
                     onClear={() => setBiometricBlobs(null)} 
@@ -418,7 +417,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
               </div>
               
               <div className="space-y-6">
-                <div className="bg-[#008751]/5 p-6 rounded-3xl border border-[#008751]/8">
+                <div className="bg-[#008751]/5 p-6 rounded-2xl border border-[#008751]/8">
                   <h3 className="text-[#008751] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4" /> Integrity Verification
                   </h3>
@@ -443,7 +442,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         )}
 
         {step === 'documents' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-50 p-12 rounded-[4rem] border border-[#008751]/15 text-center space-y-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-50 p-12 rounded-xl border border-[#008751]/15 text-center space-y-8">
              <div className="w-24 h-24 bg-white text-[#008751] rounded-full flex items-center justify-center mx-auto shadow-inner">
                 <ShieldCheck className="w-12 h-12" />
              </div>
@@ -455,7 +454,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                 </p>
              </div>
 
-             <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-[#008751]/10 space-y-4">
+             <div className="p-8 bg-slate-50 rounded-xl border border-[#008751]/10 space-y-4">
                 <div className="flex items-center justify-between px-6 py-4 bg-slate-50 rounded-2xl border border-[#008751]/15">
                    <div className="flex items-center gap-4">
                       <div className="p-2 bg-emerald-50 text-emerald-500 rounded-lg"><HardDrive className="w-5 h-5" /></div>
@@ -475,7 +474,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
              <button
                onClick={handleSubmit}
                disabled={submitting}
-               className="w-full bg-[#008751] text-white py-8 rounded-[2rem] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+               className="w-full bg-[#008751] text-white py-8 rounded-xl font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
              >
                {submitting ? (
                  <>

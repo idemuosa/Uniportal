@@ -143,7 +143,7 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         ))}
       </div>
 
-      <div className="relative w-40 h-40 mx-auto bg-neutral-950 rounded-full overflow-hidden border-4 border-[#008751]/8 shadow-2xl group">
+      <div className="relative w-80 h-80 mx-auto bg-neutral-950 rounded-[3rem] overflow-hidden border-4 border-[#008751]/8 shadow-2xl group">
         <AnimatePresence mode="wait">
           {!allCaptured ? (
             <motion.div
@@ -167,14 +167,14 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
                   
                   {/* Target Guide */}
                   <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 border-[60px] border-black/40" />
+                    <div className="absolute inset-0 border-[25px] border-black/40" />
                     {currentStep === 0 ? (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-52 border-2 border-[#008751]/15 rounded-full flex items-center justify-center animate-pulse">
-                         <div className="w-full h-full border-[1.5px] border-emerald-500/30 rounded-full" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-72 border-2 border-emerald-500/50 rounded-3xl flex items-center justify-center animate-pulse">
+                         <div className="w-full h-full border-[1px] border-emerald-500/20 rounded-3xl" />
                       </div>
                     ) : (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-40 border-2 border-dashed border-[#008751]/15 rounded-2xl flex items-center justify-center">
-                         <Hand className="w-12 h-12 text-[#008751]/10" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-64 border-2 border-dashed border-emerald-500/50 rounded-3xl flex items-center justify-center">
+                         <Hand className="w-24 h-24 text-emerald-500/20" />
                       </div>
                     )}
                   </div>
@@ -199,8 +199,8 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
                   </AnimatePresence>
 
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-slate-50 backdrop-blur-xl rounded-full border border-[#008751]/8 flex items-center gap-2 whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[7px] font-black text-[#008751] uppercase tracking-widest text-[8px]">Live Biometric Thread</span>
+                    <div className="w-1.5 h-1.5 rounded-full  animate-pulse" />
+                    <span className="text-[7px] font-black text-[#008751] uppercase tracking-widest text-[8px]">Live Biometric</span>
                   </div>
                 </>
               )}
@@ -232,7 +232,7 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
             className="w-full flex-1 bg-slate-50 text-neutral-950 p-4 rounded-[1.5rem] font-black uppercase tracking-tighter flex items-center justify-center gap-4 hover:bg-neutral-100 transition-all disabled:opacity-50 shadow-2xl active:scale-95 group/btn"
           >
             <div className="p-2 bg-neutral-950 rounded-lg text-[#008751] group-hover/btn:rotate-12 transition-transform">
-              <Camera className="w-5 h-5" />
+              <Camera className="w-20 h-20" />
             </div>
             {countdown !== null ? `Securing In ${countdown}...` : `Capture ${steps[currentStep]} Now`}
           </button>
