@@ -1,322 +1,133 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { UserProfile } from '../../types';
 import { 
-  GraduationCap, BookOpen, CreditCard, Bed, FileText, 
-  User, MapPin, Building2, ShieldCheck, Mail, Landmark, 
-  ArrowRight, Copy, HeartPulse, History, Phone, Fingerprint, 
-  FileUp, MapPinned, Cake, LogIn 
+  GraduationCap, BookOpen, CreditCard, ShieldCheck,
+  MapPin, Fingerprint, ArrowRight, Bell, Sparkles, LogIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import api from '../../api/axios';
-import ClearanceForm from './ClearanceForm';
 import AttendanceLogger from '../../components/AttendanceLogger';
 
-interface StudentPortalProps {
-  user: UserProfile;
-}
-
-type Tab = 'dashboard' | 'profile' | 'clearance';
-
-export default function StudentPortal({ user }: StudentPortalProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [hasPaidAcceptance, setHasPaidAcceptance] = useState(false);
-  const [hasPaidSchoolFees, setHasPaidSchoolFees] = useState(false);
-  const navigate = useNavigate();
+export default function StudentPortal({ user }: { user: UserProfile }) {
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkPayments = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/finances/payments/');
-        const payments = response.data;
-        setHasPaidAcceptance(payments.some((p: any) => p.type === 'acceptance' && p.status === 'success'));
-        setHasPaidSchoolFees(payments.some((p: any) => p.type === 'tuition' && p.status === 'success'));
-      } catch (error) {
-        console.error('Failed to fetch payments:', error);
+        // In a real app, this would be a unified student profile endpoint
+        const payRes = await api.get('/finances/payments/');
+        setPayments(payRes.data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
       }
     };
-    if (user) checkPayments();
-  }, [user]);
+    fetchData();
+  }, []);
 
-  const currentSchool = {
-    portalName: 'Federal University Lukke',
-    idLabel: 'Student Registration No',
-    idValue: user.matricNo || 'LUKKE/2025/11204',
-    logo: 'https://picsum.photos/seed/lukke/200/200',
-    motto: 'Knowledge, Integrity and Service'
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
-  };
+  const stats = [
+    { label: 'Academic Standing', value: 'Good', icon: <Award className="text-emerald-500" /> },
+    { label: 'Semester Progress', value: '65%', icon: <Target className="text-blue-500" /> },
+    { label: 'Wallet Balance', value: '₦0.00', icon: <Wallet className="text-amber-500" /> },
+  ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      {/* 🧭 HEADER & NAVIGATION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-[#008751]/5 backdrop-blur-xl rounded-2xl p-3 shadow-2xl border border-[#008751]/8 flex items-center justify-center">
-             <GraduationCap className="w-8 h-8 text-[#008751]" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tighter text-[#008751] uppercase italic">{currentSchool.portalName}</h1>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-[#008751] font-bold tracking-[0.3em] uppercase text-[9px] opacity-60">Academic Session 2025/2026</span>
-              <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
-              <span className="text-[#008751]/35 font-bold uppercase text-[9px]">Harmattan Semester</span>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-10 animate-in fade-in duration-700 max-w-7xl mx-auto px-4">
+      {/* 🚀 COMMAND CENTER HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-emerald-950 p-10 rounded-[3rem] border border-emerald-800 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
         
-        <div className="flex bg-slate-50 backdrop-blur-md p-1.5 rounded-2xl border border-[#008751]/5 shadow-xl">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'dashboard' ? 'bg-white text-[#008751] shadow-lg scale-105' : 'text-[#008751]/35 hover:text-[#008751]'}`}
-          >
-            Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'profile' ? 'bg-white text-[#008751] shadow-lg scale-105' : 'text-[#008751]/35 hover:text-[#008751]'}`}
-          >
-            Base Data
-          </button>
-          <button 
-            onClick={() => setActiveTab('clearance')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'clearance' ? 'bg-white text-[#008751] shadow-lg scale-105' : 'text-[#008751]/35 hover:text-[#008751]'}`}
-          >
-            Clearance
-          </button>
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-[0.3em] border border-emerald-500/30 backdrop-blur-md">
+              <Sparkles className="w-3 h-3 inline mr-2" /> Live Session Active
+            </span>
+          </div>
+          <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
+            Welcome back, <br /> <span className="text-emerald-400">{user.name.split(' ')[0]}</span>
+          </h1>
+          <p className="text-emerald-100/40 text-sm font-bold uppercase tracking-widest max-w-md">
+            Federal University Lukke • Matric No: {user.matricNo || 'LUK/2025/102'}
+          </p>
+        </div>
+
+        <div className="relative z-10 flex gap-4">
+           <Link to="/courses" className="px-8 py-4 bg-emerald-500 text-emerald-950 rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-xl shadow-emerald-500/20 flex items-center gap-3">
+             Register Courses <ArrowRight className="w-4 h-4" />
+           </Link>
         </div>
       </div>
 
-      {/* 🚀 QUICK STATUS INDICATORS */}
-      <div className="flex flex-wrap gap-4">
-        <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-          hasPaidAcceptance ? 'bg-emerald-500/10 border-emerald-500/20 text-[#008751]' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${hasPaidAcceptance ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-amber-400'}`} />
-          <span className="text-[10px] font-black uppercase tracking-widest italic">Acceptance: {hasPaidAcceptance ? 'PAID' : 'PENDING'}</span>
-        </div>
-        
-        <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-          hasPaidSchoolFees ? 'bg-emerald-500/10 border-emerald-500/20 text-[#008751]' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${hasPaidSchoolFees ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-amber-400'}`} />
-          <span className="text-[10px] font-black uppercase tracking-widest italic">School Fees: {hasPaidSchoolFees ? 'PAID' : 'PENDING'}</span>
-        </div>
+      {/* 📊 CORE STATS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-emerald-900/5 shadow-xl hover:border-emerald-500/20 transition-all group">
+            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              {s.icon}
+            </div>
+            <p className="text-[10px] font-black text-emerald-900/30 uppercase tracking-[0.2em]">{s.label}</p>
+            <p className="text-2xl font-black text-emerald-900 tracking-tighter mt-1">{s.value}</p>
+          </div>
+        ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        {activeTab === 'dashboard' ? (
-          <motion.div 
-            key="dashboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-12"
-          >
-            {/* 🎯 CORE ACTION HUB - THE PILLARS REQUESTED BY USER */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* 1. Base Data Card */}
-              <button 
-                onClick={() => setActiveTab('profile')}
-                className="bg-emerald-900/40 backdrop-blur-xl p-10 rounded-[3rem] border border-[#008751]/8 shadow-2xl text-left group hover:bg-emerald-500/10 transition-all relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
-                <div className="p-4 bg-emerald-500/20 rounded-2xl w-fit mb-8 group-hover:scale-110 transition-transform">
-                  <User className="w-8 h-8 text-[#008751]" />
-                </div>
-                <h3 className="text-xl font-black text-[#008751] uppercase italic tracking-tighter mb-2">Base Data</h3>
-                <p className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest leading-relaxed">
-                  Personal Identity & Bio-Data Records.
-                </p>
-                <div className="mt-8 flex justify-between items-center">
-                  <span className="text-[8px] font-black text-[#008751] px-3 py-1 bg-emerald-500/10 rounded-full">View Profile</span>
-                  <ArrowRight className="w-5 h-5 text-[#008751] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </div>
-              </button>
-
-              {/* 2. Course Registration Card */}
-              <Link 
-                to="/courses"
-                className="bg-emerald-900/40 backdrop-blur-xl p-10 rounded-[3rem] border border-[#008751]/8 shadow-2xl text-left group hover:bg-emerald-500/10 transition-all relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl" />
-                <div className="p-4 bg-indigo-500/20 rounded-2xl w-fit mb-8 group-hover:scale-110 transition-transform">
-                  <BookOpen className="w-8 h-8 text-indigo-400" />
-                </div>
-                <h3 className="text-xl font-black text-[#008751] uppercase italic tracking-tighter mb-2">Registration</h3>
-                <p className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest leading-relaxed">
-                  Enroll for Session Course Registry.
-                </p>
-                <div className="mt-8 flex justify-between items-center">
-                  <span className="text-[8px] font-black text-indigo-400 px-3 py-1 bg-indigo-500/10 rounded-full">Open Enrollment</span>
-                  <ArrowRight className="w-5 h-5 text-indigo-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-
-              {/* 3. School Fees Card */}
-              <Link 
-                to="/payments"
-                className="bg-emerald-900/40 backdrop-blur-xl p-10 rounded-[3rem] border border-[#008751]/8 shadow-2xl text-left group hover:bg-emerald-500/10 transition-all relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl" />
-                <div className="p-4 bg-amber-500/20 rounded-2xl w-fit mb-8 group-hover:scale-110 transition-transform">
-                  <CreditCard className="w-8 h-8 text-amber-400" />
-                </div>
-                <h3 className="text-xl font-black text-[#008751] uppercase italic tracking-tighter mb-2">School Fees</h3>
-                <p className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest leading-relaxed">
-                  Financial Settlement & Receipt Hub.
-                </p>
-                <div className="mt-8 flex justify-between items-center">
-                  <span className="text-[8px] font-black text-amber-400 px-3 py-1 bg-amber-500/10 rounded-full">Payment Portal</span>
-                  <ArrowRight className="w-5 h-5 text-amber-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-            </div>
-
-            {/* 📊 SUMMARY SECTION */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1">
-                <AttendanceLogger user={user} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* 📋 MAIN ACTIVITY FEED */}
+        <div className="lg:col-span-8 space-y-8">
+           <div className="bg-slate-50 p-10 rounded-[4rem] border border-emerald-900/5 relative overflow-hidden min-h-[500px]">
+              <div className="flex justify-between items-center mb-10">
+                <h3 className="text-xl font-black text-emerald-900 uppercase italic tracking-tighter flex items-center gap-4">
+                  <Bell className="w-5 h-5 opacity-30" /> Academic Timeline
+                </h3>
               </div>
 
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-slate-50 backdrop-blur-xl p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-                  <h3 className="text-xs font-black text-[#008751] uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
-                    <ShieldCheck className="w-5 h-5" /> Institutional Metadata
-                  </h3>
-                  <div className="grid grid-cols-2 gap-8">
-                    <div>
-                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Registered Faculty</p>
-                      <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.faculty || 'Standard'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Current Level</p>
-                      <p className="font-black text-[#008751] italic uppercase tracking-tighter">{user.level || '100L'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] text-[#008751]/25 uppercase font-black tracking-widest mb-1.5">Verification ID</p>
-                      <p className="font-mono text-[#008751] text-xs font-black uppercase">{user.matricNo || 'N/A'}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                       <button onClick={() => navigate('/portal')} className="p-3 bg-[#008751]/3 rounded-xl border border-[#008751]/8 hover:bg-[#008751]/5 transition-all">
-                          <Fingerprint className="w-5 h-5 text-[#008751] opacity-40 hover:opacity-100" />
-                       </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-10 rounded-[3.5rem] border border-[#008751]/8 shadow-2xl relative overflow-hidden group">
-                   <div className="relative z-10 h-full flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">Session Clearance</h3>
-                        <p className="text-emerald-100/60 text-[10px] font-bold uppercase tracking-widest">Digital Audit status: verified</p>
+              <div className="space-y-6">
+                 {[
+                   { title: 'Admission Finalized', desc: 'Registry has cleared your biometric data.', time: '2 days ago', status: 'success' },
+                   { title: 'Course Enrollment', desc: 'Semester registration is now open.', time: '1 week ago', status: 'info' },
+                   { title: 'Payment Reminder', desc: 'Tuition settlement deadline approaching.', time: 'Ongoing', status: 'warning' },
+                 ].map((item, i) => (
+                   <div key={i} className="flex gap-6 items-start group">
+                      <div className="w-1.5 h-12 rounded-full bg-emerald-500/10 relative">
+                        <div className={`absolute top-0 left-0 w-full h-1/2 rounded-full ${item.status === 'warning' ? 'bg-amber-400' : 'bg-emerald-500'}`} />
                       </div>
-                      <Link to="/payments" className="bg-white text-[#008751] p-5 rounded-2xl font-black text-xs uppercase tracking-widest italic flex items-center justify-between hover:bg-emerald-50 transition-all shadow-2xl mt-12">
-                        View Final Receipts
-                        <ArrowRight className="w-5 h-5" />
-                      </Link>
+                      <div className="space-y-1">
+                        <p className="text-sm font-black text-emerald-900 uppercase italic">{item.title}</p>
+                        <p className="text-xs text-emerald-900/40 font-bold uppercase tracking-widest">{item.desc}</p>
+                        <p className="text-[9px] text-emerald-500 font-black uppercase mt-2">{item.time}</p>
+                      </div>
                    </div>
-                </div>
+                 ))}
               </div>
-            </div>
-          </motion.div>
-        ) : activeTab === 'profile' ? (
-          <motion.div 
-            key="profile"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-          >
-            {/* 📸 BIOMETRIC PHOTO & BASE INFO */}
-            <div className="space-y-8">
-               <div className="bg-emerald-900/40 backdrop-blur-xl p-10 rounded-[4rem] border border-[#008751]/8 text-center space-y-6 shadow-2xl overflow-hidden relative group">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]" />
-                  <div className="w-48 h-56 bg-slate-50/50 rounded-[3rem] mx-auto border-4 border-[#008751]/8 overflow-hidden shadow-2xl relative group/img">
-                     {user.photoUrl || user.faceUrl ? (
-                       <img src={user.photoUrl || user.faceUrl} alt="" className="w-full h-full object-cover grayscale contrast-125 group-hover/img:scale-110 transition-transform duration-700" />
-                     ) : (
-                       <User className="w-full h-full p-10 text-[#008751]/5 opacity-20" />
-                     )}
-                     <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                        <Fingerprint className="text-[#008751] w-10 h-10 animate-pulse" />
-                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-black text-[#008751] italic uppercase tracking-tighter">{user.name}</h2>
-                    <p className="text-[#008751] font-bold text-[10px] uppercase tracking-[0.3em] opacity-60">Verified Institutional Profile</p>
-                  </div>
-                  <div className="pt-6 border-t border-[#008751]/5 grid grid-cols-3 gap-2">
-                     <div className="text-center">
-                        <p className="text-[7px] text-[#008751]/15 font-black uppercase tracking-widest mb-1">Age</p>
-                        <p className="text-xs text-[#008751] font-black italic">{user.age || '--'}</p>
-                     </div>
-                     <div className="text-center">
-                        <p className="text-[7px] text-[#008751]/15 font-black uppercase tracking-widest mb-1">Gender</p>
-                        <p className="text-xs text-[#008751] font-black italic">{user.gender || 'Set'}</p>
-                     </div>
-                     <div className="text-center">
-                        <p className="text-[7px] text-[#008751]/15 font-black uppercase tracking-widest mb-1">Status</p>
-                        <p className={`text-xs font-black italic uppercase ${hasPaidAcceptance ? 'text-[#008751]' : 'text-amber-400'}`}>
-                          {hasPaidAcceptance ? 'Active' : 'Pending'}
-                        </p>
-                     </div>
-                  </div>
-               </div>
+           </div>
+        </div>
 
-               <div className="bg-slate-50 backdrop-blur-md p-8 rounded-[3rem] border border-[#008751]/8 space-y-6">
-                  <h4 className="text-[10px] font-black text-[#008751] uppercase tracking-[0.4em] mb-4">Registry Actions</h4>
-                  <button className="w-full flex items-center justify-between p-4 bg-[#008751]/3 rounded-2xl text-[#008751] font-black text-[10px] uppercase tracking-widest hover:bg-[#008751]/5 transition-all border border-[#008751]/5 group">
-                     Print Bio-Data Form
-                     <Copy className="w-4 h-4 opacity-20 group-hover:opacity-100" />
-                  </button>
-               </div>
-            </div>
+        {/* 🛠️ QUICK TOOLS */}
+        <div className="lg:col-span-4 space-y-8">
+           <AttendanceLogger user={user} />
 
-            {/* 🧬 DETAILED BIO-DATA GRID */}
-            <div className="lg:col-span-2 space-y-8">
-               <div className="bg-emerald-900/40 backdrop-blur-xl p-12 rounded-[4rem] border border-[#008751]/8 shadow-2xl space-y-12">
-                  <div className="space-y-8">
-                    <h3 className="text-xs font-black text-[#008751] uppercase tracking-[0.5em] flex items-center gap-4">
-                       <MapPin className="w-4 h-4" /> Geographical & Origin Data
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                       <div className="space-y-1.5 px-6 border-l-2 border-emerald-500/20">
-                          <p className="text-[8px] font-black text-[#008751]/25 uppercase tracking-[0.3em]">State of Origin</p>
-                          <p className="text-sm font-black text-[#008751] italic uppercase tracking-tight">{user.stateOfOrigin || 'Registered'}</p>
-                       </div>
-                       <div className="space-y-1.5 px-6 border-l-2 border-emerald-500/20">
-                          <p className="text-[8px] font-black text-[#008751]/25 uppercase tracking-[0.3em]">City / Location</p>
-                          <p className="text-sm font-black text-[#008751] italic uppercase tracking-tight">{user.locationCity || 'Unspecified'}</p>
-                       </div>
-                       <div className="space-y-1.5 px-6 border-l-2 border-emerald-500/20">
-                          <p className="text-[8px] font-black text-[#008751]/25 uppercase tracking-[0.3em]">Institutional ID</p>
-                          <p className="text-sm font-black text-[#008751] italic uppercase tracking-tight">{user.matricNo || 'Assigned'}</p>
-                       </div>
-                    </div>
-                  </div>
-               </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="clearance"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-          >
-            <ClearanceForm user={user} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+           <div className="bg-emerald-50 p-10 rounded-[3rem] border border-emerald-100 space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white rounded-xl shadow-sm"><ShieldCheck className="text-emerald-600" /></div>
+                <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Verify Identity</h4>
+              </div>
+              <p className="text-[10px] text-emerald-900/50 font-bold uppercase leading-relaxed tracking-wider">
+                Access restricted areas using your biometric fingerprint or face ID.
+              </p>
+              <button className="w-full py-4 bg-emerald-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-emerald-900/20 hover:bg-emerald-950 transition-all flex items-center justify-center gap-3">
+                <Fingerprint className="w-4 h-4" /> Initialize Scan
+              </button>
+           </div>
+        </div>
+      </div>
     </div>
   );
 }
 
+// Helper icons
+function Award({ className }: { className?: string }) { return <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>; }
+function Target({ className }: { className?: string }) { return <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>; }
+function Wallet({ className }: { className?: string }) { return <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>; }

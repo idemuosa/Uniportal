@@ -206,9 +206,9 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
               )}
             </motion.div>
           ) : (
-            <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className=\"w-full h-full relative flex bg-neutral-900\">
+            <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative flex bg-neutral-900">
                {capturedPreviews.map((src, i) => (
-                 <div key={i} className=\"relative group flex-1 border-r border-[#008751]/5 overflow-hidden last:border-r-0\">
+                 <div key={i} className="relative group flex-1 border-r border-[#008751]/5 overflow-hidden last:border-r-0">
                    <img src={src} alt={steps[i]} className="w-full h-full object-cover scale-x-[-1] grayscale contrast-125 group-hover:scale-110 transition-transform duration-700" />
                    <div className="absolute bottom-4 left-4 bg-slate-50 backdrop-blur p-2 rounded-lg">
                       <span className="text-[8px] font-black text-[#008751] uppercase tracking-widest">{steps[i]} Verified</span>

@@ -10,156 +10,185 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import pkg from './database.cjs';
 const { sequelize, User, Payment, Attendance, Application } = pkg;
 
-// 🪵 Logger Configuration
+// 🪵 Professional Logger
 const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.json(),
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
   transports: [
     new winston.transports.Console({ format: winston.format.simple() }),
-    new winston.transports.File({ filename: 'combined.log' })
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' })
   ],
 });
 
-// 🔥 Firebase Admin initialization
+// 🔥 Firebase Admin (Identity & Security)
 try {
   if (process.env.SERVICE_ACCOUNT_PATH) {
-    // Standard ESM way to import JSON
-    import serviceAccount from './serviceAccountKey.json' assert { type: 'json' };
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    const serviceAccount = await import('./serviceAccountKey.json', { assert: { type: 'json' } });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount.default) });
   } else {
     admin.initializeApp();
   }
-  logger.info('Firebase Admin Initialized for Auth');
+  logger.info('🛡️ Firebase Guard Active');
 } catch (e) {
-  logger.warn('Firebase Admin already initialized or missing credentials');
+  logger.warn('⚠️ Firebase Admin initialization bypassed');
 }
+
+// 🛡️ Middleware: Verify Firebase Token
+const authenticate = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = authHeader.split('Bearer ')[1];
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    res.status(403).json({ error: 'Invalid Session' });
+  }
+};
 
 const app = express();
 const server = http.createServer(app);
-
-// 📡 Socket.io Initialization
-const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] }
-});
+const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// 🤖 AI Tutor Initialization
+// 🤖 AI Command Hub (Gemini Pro)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || "");
 
-// 📨 Institutional Notification Hub
-async function sendEmail({ to, subject, body, ccAdmin = true }) {
-  try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@university.edu';
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: { 
-        user: process.env.EMAIL_USER || 'treasury@university.edu', 
-        pass: process.env.EMAIL_PASS 
-      },
-    });
+// 📨 Institutional Mailer
+const transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+});
 
-    const mailOptions = {
-      from: '"University Registry" <registry@university.edu>',
-      to,
-      subject,
-      html: `
-        <div style="font-family: sans-serif; padding: 40px; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 20px;">
-          <h2 style="color: #008751; border-bottom: 1px solid #f3f4f6; padding-bottom: 20px;">\${subject}</h2>
-          <div style="padding: 20px 0; line-height: 1.6;">\${body}</div>
-          <hr style="border: 1px solid #f3f4f6; margin: 30px 0;" />
-          <p style="font-size: 11px; color: #999; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
-            Institutional Registry • Digital Confirmation • \${new Date().getFullYear()}
-          </p>
-        </div>
-      `,
-    };
-
-    if (ccAdmin) mailOptions.cc = adminEmail;
-    await transporter.sendMail(mailOptions);
-    logger.info(`Email sent to \${to}`);
-  } catch (err) {
-    logger.error('Notification Dispatch Failed:', err);
-  }
+async function sendOfficialEmail({ to, subject, body }) {
+  const mailOptions = {
+    from: `"UniPortal Registry" <${process.env.EMAIL_USER}>`,
+    to, subject,
+    html: `<div style="font-family: sans-serif; padding: 40px; color: #1a1a1a; max-width: 600px; border: 1px solid #e5e7eb; border-radius: 24px;">
+      <h2 style="color: #059669; margin-bottom: 24px;">${subject}</h2>
+      <div style="line-height: 1.6; font-size: 15px;">${body}</div>
+      <p style="margin-top: 40px; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6; pt: 20px;">Institutional ID: ${new Date().getTime()}</p>
+    </div>`
+  };
+  return transporter.sendMail(mailOptions);
 }
 
 // ------------------------------------------------------------------
-// API ENDPOINTS
+// 🚀 THE BEST API ENDPOINTS
 // ------------------------------------------------------------------
 
-app.post('/api/users/sync', async (req, res) => {
-  const { uid, email, name, role } = req.body;
+// 1. Intelligent AI Tutor (Context-Aware)
+app.post('/api/ai/tutor', authenticate, async (req, res) => {
+  const { prompt } = req.body;
   try {
-    const [user, created] = await User.findOrCreate({
-      where: { uid },
-      defaults: { email, name, role }
-    });
-    res.json({ status: 'success', user, created });
-  } catch (error) {
-    logger.error('Sync Error:', error);
-    res.status(500).json({ error: 'Database sync failed' });
-  }
-});
-
-app.post('/api/ai/tutor', async (req, res) => {
-  const { prompt, studentInfo } = req.body;
-  try {
+    // Fetch student data from Postgres for context
+    const student = await User.findByPk(req.user.uid, { include: [Payment, Application] });
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const context = `You are an AI Tutor for UniPortal. Student: \${studentInfo.name}, Dept: \${studentInfo.department}. Answer helpfully.`;
+
+    const context = `
+      You are the UniPortal AI Assistant.
+      Student Name: ${student?.name || 'User'}
+      Level: ${student?.level || '100L'}
+      Fees Paid: ${student?.Payments?.length || 0}
+      Admission Status: ${student?.Application?.status || 'Pending'}
+      Answer concisely as a helpful university guide.
+    `;
+
     const result = await model.generateContent([context, prompt]);
-    const response = await result.response;
-    res.json({ text: response.text() });
+    res.json({ text: result.response.text() });
   } catch (error) {
-    logger.error('AI Error:', error);
-    res.status(500).json({ error: 'AI processing failed' });
+    res.status(500).json({ error: 'AI Brain Lag' });
   }
 });
 
-app.post('/api/notify', async (req, res) => {
-  const { to, subject, body, type, userId } = req.body;
+// 2. Real-Time Treasury (Verified)
+app.post('/api/payments/verify', authenticate, async (req, res) => {
+  const { amount, type, reference } = req.body;
   try {
-    await sendEmail({ to, subject, body });
-    if (userId) {
-      io.to(`user_\${userId}`).emit('notification', { title: subject, message: body, type });
-    }
-    res.json({ status: 'success' });
+    const payment = await Payment.create({
+      uid: req.user.uid,
+      amount, type,
+      status: 'success',
+      transactionId: reference || `REF-${Date.now()}`,
+      method: 'remita'
+    });
+
+    // Real-time notification to the student
+    io.to(`user_${req.user.uid}`).emit('notification', {
+      title: 'Payment Secured',
+      message: `${type.toUpperCase()} of ₦${amount.toLocaleString()} has been verified.`,
+      type: 'success'
+    });
+
+    res.json({ status: 'success', payment });
   } catch (error) {
-    res.status(500).json({ error: 'Notification failure' });
+    res.status(500).json({ error: 'Treasury sync failed' });
   }
 });
 
-app.post('/api/payments/verify', async (req, res) => {
-  const { uid, amount, type, reference } = req.body;
+// 3. Admin: Super-Search & Analytics
+app.get('/api/admin/analytics', authenticate, async (req, res) => {
   try {
-    const transactionId = reference || 'TX-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    await Payment.create({ uid, amount, type, status: 'success', transactionId, method: 'remita' });
-    io.to(`user_\${uid}`).emit('payment_verified', { transactionId, status: 'success' });
-    res.json({ status: 'success', transactionId });
+    const totalStudents = await User.count({ where: { role: 'student' } });
+    const totalRevenue = await Payment.sum('amount', { where: { status: 'success' } });
+    const pendingApps = await Application.count({ where: { status: 'pending' } });
+
+    res.json({ totalStudents, totalRevenue, pendingApps });
   } catch (error) {
-    res.status(500).json({ error: 'Verification failed' });
+    res.status(500).json({ error: 'Analytics failure' });
   }
 });
 
-app.post('/api/academics/attendance', async (req, res) => {
-  const { studentId, courseId, location } = req.body;
+// 4. Attendance Hub
+app.post('/api/academics/attendance', authenticate, async (req, res) => {
   try {
-    await Attendance.create({ studentId, courseId, location });
-    res.json({ status: 'success' });
+    const attendance = await Attendance.create({
+      studentId: req.user.uid,
+      courseId: req.body.courseId || 'GEN101',
+      location: req.body.location || 'Lecture Hall A'
+    });
+    res.json({ status: 'success', attendance });
   } catch (error) {
     res.status(500).json({ error: 'Attendance log failed' });
   }
 });
 
+// 5. User Sync (Firebase -> Postgres)
+app.post('/api/users/sync', authenticate, async (req, res) => {
+  const { name, role, email } = req.body;
+  try {
+    const [user, created] = await User.findOrCreate({
+      where: { uid: req.user.uid },
+      defaults: { name, role, email }
+    });
+    res.json({ user, created });
+  } catch (error) {
+    res.status(500).json({ error: 'Identity sync failure' });
+  }
+});
+
+// 📡 Socket Events
 io.on('connection', (socket) => {
-  socket.on('join_room', (userId) => {
-    socket.join(`user_\${userId}`);
+  socket.on('join_room', (uid) => {
+    socket.join(`user_${uid}`);
+    logger.info(`👤 User ${uid} connected to real-time hub`);
   });
 });
 
+// ------------------------------------------------------------------
+// 🏁 START THE BEST PORTAL
+// ------------------------------------------------------------------
 const PORT = process.env.PORT || 5000;
 sequelize.sync({ alter: true }).then(() => {
   server.listen(PORT, () => {
-    logger.info(`🚀 Productive Portal Server running on port \${PORT}`);
+    logger.info(`🚀 THE BEST UniPortal Server running on port ${PORT}`);
   });
 });

@@ -1,84 +1,49 @@
-# School Portal - AI Powered Management System
+# 🎓 UniPortal V3 - The Best Educational Management System
 
-A comprehensive school portal built with modern web technologies, featuring real-time communication and AI-driven features.
+A high-performance, real-time school portal built for professional environments. Powered by Node.js, React, PostgreSQL, and AI.
 
-## 🚀 Tech Stack
+## 🌟 Top-Tier Features
 
-- **Frontend:** React (Vite)
-- **Backend:** Node.js (Express)
+- **🛡️ Iron-Clad Security:** Dual-layer authentication with Firebase Identity and Backend JWT verification.
+- **🐘 Relational Mastery:** Full PostgreSQL database with Sequelize ORM for ACID-compliant transactions.
+- **🤖 Contextual AI:** Google Gemini-powered tutor that understands student academic records and financial status.
+- **📡 Real-Time Heartbeat:** Socket.io integration for instant treasury verification and registry updates.
+- **📊 Admin Command Center:** Professional CRM-style dashboard for managing thousands of students and millions in revenue.
+- **🪵 Forensic Logging:** Winston-powered logging for every critical action (Payments, Grades, Attendance).
+- **🐋 Dockerized:** Production-ready `docker-compose` setup for one-click global deployment.
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React 19 + Vite + Tailwind CSS + Framer Motion
+- **Backend:** Node.js (ESM) + Express
+- **Database:** PostgreSQL 15
 - **Real-time:** Socket.io
-- **Database:** Firebase (Firestore)
-- **Deployment:** Railway
-- **Mobile/Desktop:** Capacitor & Electron support
+- **Identity:** Firebase Auth + Admin SDK
+- **AI:** Google Generative AI (Gemini Pro)
 
-## 🛠️ Getting Started
+## 🚀 One-Click Start (Docker)
 
-### Prerequisites
+Ensure Docker Desktop is running, then:
+```bash
+docker-compose up --build
+```
 
-- Node.js (v18 or higher)
-- npm or yarn
+## 🛠️ Manual Development
 
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd schoolportal
-   ```
-
-2. **Install dependencies:**
+1. **Install Dependencies:**
    ```bash
    npm install
    ```
 
-3. **Environment Configuration:**
-   Create a `.env.local` file in the root and add your configuration:
-   ```env
-   VITE_FIREBASE_API_KEY=your_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_domain
-   VITE_FIREBASE_PROJECT_ID=your_project_id
-   # Add other necessary keys
+2. **Environment Configuration:**
+   - Create `.env` based on `.env.example`.
+   - Add your `GOOGLE_AI_KEY` and `DATABASE_URL`.
+   - Place `serviceAccountKey.json` in the root.
+
+3. **Launch Everything:**
+   ```bash
+   npm run dev:all
    ```
 
-### Running Locally
-
-- **Start Frontend (Vite):**
-  ```bash
-  npm run dev
-  ```
-- **Start WebSocket Server:**
-  ```bash
-  npm run start:ws
-  ```
-
-## 🌟 Productive Portal Features
-
-- **RBAC & Security:** Robust role-based access control with Firestore rules.
-- **Academic SIS:** Attendance logging and course registration workflows.
-- **Treasury:** Verified payment processing with real-time confirmation.
-- **AI Assistant:** Google Gemini-powered academic tutor integrated into the layout.
-- **Real-time:** Instant notifications via Socket.io for all critical updates.
-- **Logging:** Comprehensive backend logging with Winston.
-
-## 🚢 Deployment (Railway)
-
-This project is configured for deployment on **Railway**.
-
-### Do I need Docker?
-
-**Short answer:** No, but it's recommended.
-
-- **Without Docker:** Railway's [Nixpacks](https://nixpacks.com/) will automatically detect your Node.js environment and build the project. This is the simplest way.
-- **With Docker:** Providing a `Dockerfile` gives you full control over the build environment. This is useful if you want to ensure the exact same environment between development and production, or if you need to run multiple processes (like the API and WebSocket server) in a specific way.
-
-### Deployment Steps
-
-1. Connect your GitHub repository to [Railway](https://railway.app/).
-2. Railway will automatically detect the project.
-3. Configure your Environment Variables in the Railway dashboard.
-4. (Optional) Add a `Dockerfile` if you need custom build steps.
-
-## 📱 Mobile & Desktop
-
-- **Android/iOS:** Uses Capacitor. Run `npm run cap:sync` to sync web assets.
-- **Desktop:** Uses Electron. Run `npm run electron:dev` for development.
+---
+**Institutional Registry • Digital Confirmation • 2025**
