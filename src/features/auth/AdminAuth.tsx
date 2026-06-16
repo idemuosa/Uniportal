@@ -138,7 +138,7 @@ export default function AdminAuth() {
                   type="email"
                   required
                   placeholder="Email Address"
-                  className="w-full h-10 bg-slate-50 border border-[#008751]/10 p-2 pl-14 text-sm font-black text-[#008751] placeholder:text-[#008751]/30 focus:ring-2 ring-green-500 focus:border-[#008751] outline-none transition-all tracking-widest"
+                  className="w-full h-10 bg-slate-50 border border-[#008751]/10 p-2 pl-10 text-sm font-black text-[#008751] placeholder:text-[#008751]/30 focus:ring-2 ring-green-200 focus:border-[#008751] outline-none transition-all tracking-widest"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
