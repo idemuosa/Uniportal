@@ -73,6 +73,9 @@ export default function App() {
     );
   }
 
+  // Secret Admin Path (Change this in your .env or keep it private)
+  const SECRET_ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || "lukke-core-admin-002";
+
   return (
     <Router>
       <Toaster position="top-right" richColors />
@@ -80,7 +83,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home user={user} />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/admin/login" element={<AdminAuth />} />
+
+          {/* 🔐 HIDDEN ADMIN ENTRY: Only accessible via the secret path */}
+          <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth />} />
+
           <Route path="/admission" element={user ? <AdmissionForm user={user} /> : <Navigate to="/auth" />} />
           <Route path="/portal" element={(simulatedUser || user)?.role === 'student' ? <StudentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
           <Route path="/courses" element={(simulatedUser || user)?.role === 'student' ? <CourseRegistration user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
@@ -89,7 +95,12 @@ export default function App() {
           <Route path="/hostels" element={(simulatedUser || user)?.role === 'student' ? <HostelAllocation user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
           <Route path="/results" element={(simulatedUser || user)?.role === 'student' ? <Results user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
           <Route path="/loan" element={(simulatedUser || user) ? <LoanApplicationForm user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} onSimulateLogin={setSimulatedUser} /> : <Navigate to="/admin/login" />} />
+
+          {/* Protected Admin Dashboard */}
+          <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
+
+          {/* Catch-all for deleted /admin/login */}
+          <Route path="/admin/login" element={<Navigate to="/" />} />
         </Routes>
       </Layout>
     </Router>

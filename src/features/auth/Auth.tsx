@@ -191,15 +191,6 @@ export default function Auth() {
             >
                {resetMode ? '← Back to Sign In' : (isLogin ? "Don't have an account? Create one" : 'Already have an account? Sign in')}
             </button>
-            
-            <div className="pt-4 border-t border-[ #22c55e]/8">
-               <Link 
-                 to="/admin/login" 
-                 className="inline-block px-5 py-2 rounded-full text-[10px] font-bold text-[ #22c55e]/30 border border-[#008751]/8 uppercase tracking-widest hover:text-[#008751] hover:border-[#008751]/20 hover:bg-slate-50 transition-all"
-               >
-                 Admin Login →
-               </Link>
-            </div>
         </div>
 
         <div className="flex items-center gap-8 justify-center pt-2 opacity-25">

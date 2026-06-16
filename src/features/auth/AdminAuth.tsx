@@ -109,7 +109,7 @@ export default function AdminAuth() {
               {signUpMode && (
                 <>
                   <div className="relative group">
-                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]/30 group-focus-within:text-[#008751] transition-colors" />
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]/10 group-focus-within:text-[#008751] transition-colors" />
                     <input
                       type="text"
                       required
