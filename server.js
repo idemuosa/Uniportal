@@ -187,8 +187,18 @@ io.on('connection', (socket) => {
 // 🏁 START THE BEST PORTAL
 // ------------------------------------------------------------------
 const PORT = process.env.PORT || 5000;
-sequelize.sync({ alter: true }).then(() => {
+
+const startServer = async () => {
+  try {
+    await sequelize.sync({ alter: true });
+    logger.info('🐘 Database synced successfully');
+  } catch (err) {
+    logger.warn(`⚠️ Database sync bypassed: ${err.message}`);
+  }
+
   server.listen(PORT, () => {
     logger.info(`🚀 THE BEST UniPortal Server running on port ${PORT}`);
   });
-});
+};
+
+startServer();

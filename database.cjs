@@ -1,15 +1,19 @@
 const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+const dbUrl = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/uniportal';
+
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false // Necessary for many cloud providers like Railway/Render
+  ...(process.env.DATABASE_URL ? {
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Necessary for many cloud providers like Railway/Render
+      }
     }
-  }
+  } : {})
 });
 
 // Define Models
