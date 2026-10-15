@@ -44,15 +44,15 @@ export default function Layout({ children, user }: LayoutProps) {
       <AITutor user={user} />
       {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-[#008751]/10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="flex justify-between h-20 items-center gap-6">
-            <Link to="/" className="flex items-center gap-3 group shrink-0" onClick={() => setIsMenuOpen(false)}>
-              <div className="w-12 h-12 bg-slate-50 border border-[#008751]/20 text-[#008751] rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110">
-                <GraduationCap className="w-7 h-7" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-10">
+          <div className="flex justify-between h-14 sm:h-20 items-center gap-4 sm:gap-6">
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0" onClick={() => setIsMenuOpen(false)}>
+              <div className="w-9 h-9 sm:w-12 sm:h-12 bg-slate-50 border border-[#008751]/20 text-[#008751] rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110">
+                <GraduationCap className="w-5 h-5 sm:w-7 sm:h-7" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-black uppercase tracking-tighter italic leading-none">LUKKE PORTAL</span>
-                <span className="text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mt-1 hidden sm:block">Federal University Lukke</span>
+                <span className="text-base sm:text-xl font-black uppercase tracking-tighter italic leading-none">LUKKE PORTAL</span>
+                <span className="text-[8px] sm:text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mt-1 hidden sm:block">Federal University Lukke</span>
               </div>
             </Link>
 
@@ -107,10 +107,10 @@ export default function Layout({ children, user }: LayoutProps) {
               {/* Mobile Menu Toggle */}
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden p-2.5 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] hover:bg-[#008751]/5 transition-colors"
+                className="lg:hidden p-1.5 sm:p-2.5 rounded-xl bg-slate-50 border border-[#008751]/10 text-[#008751] hover:bg-[#008751]/5 transition-colors"
                 aria-label="Toggle Menu"
               >
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {isMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
               </button>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
         {/* Mobile Navigation Menu */}
         <div className={`lg:hidden transition-all duration-300 ease-in-out border-b border-[#008751]/10 bg-white/95 backdrop-blur-xl overflow-hidden ${isMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="px-6 py-8 space-y-4">
+          <div className="px-4 py-3 space-y-2">
             <MobileNavLink to="/" active={isActive('/')} onClick={() => setIsMenuOpen(false)}>Home</MobileNavLink>
             {user && (
               <>
@@ -134,17 +134,17 @@ export default function Layout({ children, user }: LayoutProps) {
                   <Link 
                     to="/admin" 
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 text-amber-600 font-bold uppercase tracking-widest text-sm border border-amber-200"
+                    className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50 text-amber-600 font-bold uppercase tracking-wider text-xs border border-amber-200"
                   >
-                    <ShieldCheck className="w-5 h-5" /> Admin Control
+                    <ShieldCheck className="w-4 h-4" /> Admin Control
                   </Link>
                 )}
-                <div className="pt-4 mt-4 border-t border-[#008751]/10">
+                <div className="pt-2 mt-2 border-t border-[#008751]/10">
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-red-50 text-red-600 font-bold uppercase tracking-widest text-sm border border-red-100"
+                    className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg bg-red-50 text-red-600 font-bold uppercase tracking-wider text-xs border border-red-100"
                   >
-                    <LogOut className="w-5 h-5" /> Sign Out
+                    <LogOut className="w-4 h-4" /> Sign Out
                   </button>
                 </div>
               </>
@@ -153,7 +153,7 @@ export default function Layout({ children, user }: LayoutProps) {
               <Link 
                 to="/auth" 
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#008751] text-white font-bold uppercase tracking-widest text-sm shadow-xl"
+                className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#008751] text-white font-bold uppercase tracking-wider text-xs shadow-lg"
               >
                 Gateway Login
               </Link>
@@ -178,13 +178,13 @@ export default function Layout({ children, user }: LayoutProps) {
       {/* MAIN CONTENT */}
       <main className="flex-grow relative overflow-hidden bg-white">
         <div className="absolute top-0 right-0 w-[1200px] h-[1200px] bg-[#008751]/5 blur-[200px] rounded-full -translate-y-1/3 translate-x-1/2 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10 relative z-10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10 relative z-10">
           {children}
         </div>
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-slate-50 border-t border-[#008751]/10 py-16 mt-16">
+      <footer className="bg-slate-50 border-t border-[#008751]/10 py-8 sm:py-16 mt-8 sm:mt-16">
         <div className="max-w-7xl mx-auto px-6 text-center space-y-8">
            <div className="flex justify-center gap-10 opacity-30 text-[#008751]">
               <ShieldCheck className="w-6 h-6" />
@@ -225,9 +225,9 @@ function MobileNavLink({ to, children, active, onClick }: { to: string; children
       to={to}
       onClick={onClick}
       className={`
-        block p-5 rounded-xl text-lg font-black uppercase tracking-widest transition-all
+        block py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider transition-all
         ${active 
-          ? 'bg-[#008751] text-white shadow-xl shadow-[#008751]/20' 
+          ? 'bg-[#008751] text-white shadow-md shadow-[#008751]/20'
           : 'bg-slate-50 text-[#008751]/60 border border-[#008751]/5'
         }
       `}
