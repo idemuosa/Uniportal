@@ -39,9 +39,9 @@ export default function AITutor({ user }: { user: UserProfile | null }) {
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60]">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[60]">
       {isOpen ? (
-        <div className="bg-white w-80 sm:w-96 h-[500px] rounded-3xl shadow-2xl border border-[#008751]/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+        <div className="bg-white w-[calc(100vw-2rem)] max-w-[320px] sm:w-96 h-[380px] sm:h-[500px] rounded-3xl shadow-2xl border border-[#008751]/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
           {/* Header */}
           <div className="bg-[#008751] p-4 flex justify-between items-center text-white">
             <div className="flex items-center gap-2">
@@ -102,9 +102,9 @@ export default function AITutor({ user }: { user: UserProfile | null }) {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-[#008751] text-white rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 transition-transform duration-300 group"
+          className="w-11 h-11 sm:w-14 sm:h-14 bg-[#008751] text-white rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 transition-transform duration-300 group"
         >
-          <Bot className="w-7 h-7" />
+          <Bot className="w-5 h-5 sm:w-7 sm:h-7" />
           <span className="absolute right-full mr-4 bg-[#008751] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             Ask AI Assistant
           </span>
