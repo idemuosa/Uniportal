@@ -98,11 +98,20 @@ export default function AdminAuth() {
 
       if (!error.response) {
         errorMsg = 'Server unreachable. Is the Django backend running on port 8000?';
-      } else {
-        errorMsg = error.response.data?.detail ||
-                   error.response.data?.error ||
-                   (error.response.data && typeof error.response.data === 'object' ? Object.values(error.response.data).flat()[0] : null) ||
-                   'Invalid credentials';
+      } else if (typeof error.response.data === 'string') {
+        errorMsg = error.response.data;
+      } else if (error.response.data) {
+        const data = error.response.data;
+        if (data.detail) {
+          errorMsg = data.detail;
+        } else if (data.error) {
+          errorMsg = data.error;
+        } else if (typeof data === 'object') {
+          const firstVal = Object.values(data).flat()[0];
+          if (firstVal) {
+            errorMsg = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
+          }
+        }
       }
 
       toast.error(String(errorMsg));

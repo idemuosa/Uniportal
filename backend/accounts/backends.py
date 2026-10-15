@@ -7,6 +7,9 @@ class EmailOrUsernameModelBackend(ModelBackend):
         UserModel = get_user_model()
         if username is None:
             username = kwargs.get(UserModel.USERNAME_FIELD)
+
+        if not username:
+            return None
         
         try:
             # Look for user with either username OR email
