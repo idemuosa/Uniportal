@@ -98,7 +98,7 @@ export default function Auth() {
         <div className="space-y-5">
           <div className="space-y-1">
             <h2 className="text-3xl font-black text-[#008751] tracking-tight uppercase leading-none">
-              {resetMode ? 'Reset Password' : (isLogin ? 'Sign In' : 'Create Account')}
+              {resetMode ? 'Reset Password' : (isLogin ? 'Log In' : 'Create Account')}
             </h2>
             {(resetMode || !isLogin) && (
               <p className="text-sm font-medium text-[#008751]/40 leading-relaxed max-w-sm">
@@ -204,7 +204,7 @@ export default function Auth() {
             className="w-full bg-[#008751] text-white py-4 rounded-xl font-black hover:bg-[#006e41] transition-all shadow-[0_8px_25px_rgba(0,135,81,0.2)] flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98] text-sm tracking-wider uppercase"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (
-              <> {resetMode ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Create Account')} <ArrowRight className="w-4 h-4" /> </>
+              <> {resetMode ? 'Send Reset Link' : (isLogin ? 'Log In' : 'Create Account')} <ArrowRight className="w-4 h-4" /> </>
             )}
           </button>
         </form>
@@ -214,7 +214,7 @@ export default function Auth() {
                onClick={() => { if (resetMode) setResetMode(false); else setIsLogin(!isLogin); }}
                className="text-sm font-semibold text-[#008751]/50 hover:text-[#008751] transition-colors"
             >
-               {resetMode ? '← Back to Sign In' : (isLogin ? "Don't have an account? Create one" : 'Already have an account? Sign in')}
+               {resetMode ? '← Back to Log In' : (isLogin ? "Don't have an account? Create one" : 'Already have an account? Log in')}
             </button>
         </div>
       </div>
@@ -275,7 +275,7 @@ export default function Auth() {
                        <h3 className="text-lg font-black text-[#008751] tracking-tight uppercase">Need Help?</h3>
                      </div>
                   </div>
-                  <p className="text-sm text-[#008751]/40 leading-relaxed font-medium">Having trouble signing in? Contact the registry helpdesk with your JAMB number for verification.</p>
+                  <p className="text-sm text-[#008751]/40 leading-relaxed font-medium">Having trouble logging in? Contact the registry helpdesk with your JAMB number for verification.</p>
                   <button className="w-full py-4 bg-[#008751] text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-[#006e41] transition-all shadow-[0_8px_25px_rgba(0,135,81,0.2)] active:scale-[0.98] flex items-center justify-center gap-2">
                      <Mail className="w-4 h-4" /> Contact Support
                   </button>
