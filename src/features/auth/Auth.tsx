@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'sonner';
-import { Mail, Lock, User, LogIn, UserPlus, ShieldCheck, Eye, EyeOff, AlertCircle, ArrowRight, GraduationCap, Building2, Bell, BookOpen, Fingerprint, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, LogIn, UserPlus, Eye, EyeOff, AlertCircle, ArrowRight, GraduationCap, Building2, Bell, BookOpen, Fingerprint, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UniversityName } from '../../types';
 
@@ -96,23 +96,15 @@ export default function Auth() {
       {/* LEFT: AUTH FORM */}
       <div className="lg:col-span-12 xl:col-span-5 p-8 md:p-12 space-y-8 border-r border-[#008751]/8 flex flex-col justify-center bg-white">
         <div className="space-y-5">
-          <div className="flex items-center gap-4">
-             <div className="w-14 h-14 bg-[#008751]/8 border border-[#008751]/10 text-[#008751] rounded-2xl flex items-center justify-center">
-                <ShieldCheck className="w-7 h-7" />
-             </div>
-             <div>
-                <h1 className="text-lg font-black text-[#008751] tracking-tight uppercase">Lukke Portal</h1>
-                <p className="text-[10px] font-bold text-[#008751]/35 uppercase tracking-widest">Official Access Point</p>
-             </div>
-          </div>
-
           <div className="space-y-1">
             <h2 className="text-3xl font-black text-[#008751] tracking-tight uppercase leading-none">
               {resetMode ? 'Reset Password' : (isLogin ? 'Sign In' : 'Create Account')}
             </h2>
-            <p className="text-sm font-medium text-[#008751]/40 leading-relaxed max-w-sm">
-              {resetMode ? 'Enter your email to receive a password reset link.' : (isLogin ? 'Enter your credentials to access your dashboard.' : 'Create your candidate profile with a secure password.')}
-            </p>
+            {(resetMode || !isLogin) && (
+              <p className="text-sm font-medium text-[#008751]/40 leading-relaxed max-w-sm">
+                {resetMode ? 'Enter your email to receive a password reset link.' : 'Create your candidate profile with a secure password.'}
+              </p>
+            )}
           </div>
         </div>
 
