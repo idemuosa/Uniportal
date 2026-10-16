@@ -28,6 +28,12 @@
     font-family: ui-sans-serif, system-ui, sans-serif;
   }
 
+  @media (max-width: 640px) {
+    html {
+      font-size: 13px; /* Reduced base font size for mobile view */
+    }
+  }
+
   body {
     @apply bg-white text-[#008751] antialiased;
     font-family: ui-sans-serif, system-ui, sans-serif;
