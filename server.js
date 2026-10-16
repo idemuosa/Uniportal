@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
@@ -52,11 +55,13 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const corsOrigin = process.env.CORS_ORIGIN || "*";
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
+const io = new Server(server, { cors: { origin: corsOrigin, methods: ["GET", "POST"] } });
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(bodyParser.json());
 
 // 🤖 AI Command Hub (Gemini Pro)
