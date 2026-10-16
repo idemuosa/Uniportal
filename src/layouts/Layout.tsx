@@ -192,7 +192,7 @@ export default function Layout({ children, user }: LayoutProps) {
               <FileText className="w-6 h-6" />
            </div>
  
-           <p className="text-[11px] font-black text-[ #22c55e]/20 uppercase tracking-[0.1em]">
+           <p className="text-[9px] font-black text-[#008751]/40 uppercase tracking-[0.1em]">
              © 2026 Federal University Lukke • Central Registry Synchronization Active
            </p>
         </div>
@@ -206,7 +206,7 @@ function NavLink({ to, children, active, icon }: { to: string; children: ReactNo
     <Link
       to={to}
       className={`
-        px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300
+        px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all duration-300
         ${active 
           ? 'bg-[#008751]/10 text-[#008751] ring-1 ring-[#008751]/20' 
           : 'text-[#008751]/50 hover:text-[#008751] hover:bg-[#008751]/5'
