@@ -5,9 +5,10 @@ import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FACULTIES, DEPARTMENTS } from '../../constants';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CameraCapture from '../../components/CameraCapture';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
 
 interface AdmissionFormProps {
   user: UserProfile;
@@ -23,6 +24,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [application, setApplication] = useState<AdmissionApplication | null>(null);
+  const [showSlipModal, setShowSlipModal] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -155,15 +157,37 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-[#008751] border-t-transparent rounded-full animate-spin" /></div>;
 
   if (application) {
+    const candidateData: CandidateData = {
+      candidateId: application.id ? `LUK-ADM-${application.id}` : undefined,
+      name: user.name,
+      email: user.email,
+      role: 'Admission Candidate',
+      programType: application.type,
+      faculty: user.faculty,
+      department: user.department,
+      jambRegNo: application.jambRegNo,
+      jambScore: application.jambScore,
+      phoneNumber: application.phoneNumber,
+      gender: application.gender,
+      status: `Application ${application.status.toUpperCase()}`,
+      registrationDate: application.createdAt ? new Date(application.createdAt).toLocaleDateString() : undefined
+    };
+
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500">
+        {showSlipModal && (
+          <CandidateRegistrationSlip
+            candidate={candidateData}
+            onClose={() => setShowSlipModal(false)}
+          />
+        )}
         <div className="bg-slate-50 p-12 rounded-xl border border-[#008751]/10 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-8000/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-125 transition-transform duration-1000" />
           <div className="relative z-10 text-center space-y-6">
             <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
                <CheckCircle className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-black text-[#008751] tracking-tighter uppercase">Application</h2>
+            <h2 className="text-3xl font-black text-[#008751] tracking-tighter uppercase">Application Submitted</h2>
             <div className="flex items-center justify-center gap-4">
               <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
                 application.status === 'pending' ? 'bg-amber-100 text-amber-600 border border-amber-200' :
@@ -175,6 +199,15 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
             <p className="text-[#008751]/40 text-xs font-medium max-w-sm mx-auto leading-relaxed italic">
               Your application is currently being analyzed by the Central Admission Committee. Credentials and biometrics are under verification.
             </p>
+
+            <div className="pt-4 flex justify-center">
+              <button
+                onClick={() => setShowSlipModal(true)}
+                className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95"
+              >
+                <Printer className="w-5 h-5" /> Print Application Slip (PDF)
+              </button>
+            </div>
           </div>
         </div>
       </div>
