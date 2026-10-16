@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, User, LogIn, UserPlus, Eye, EyeOff, AlertCircle, ArrowRight, GraduationCap, Building2, Bell, BookOpen, Fingerprint, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UniversityName } from '../../types';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
 
 const getPasswordStrength = (password: string) => {
   let strength = 0;
@@ -27,6 +28,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
+  const [registeredCandidate, setRegisteredCandidate] = useState<CandidateData | null>(null);
   const navigate = useNavigate();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -75,8 +78,17 @@ export default function Auth() {
           role: 'applicant'
         });
 
-        toast.success('Registration successful! Please login to continue.');
-        setIsLogin(true);
+        const newCandidate: CandidateData = {
+          name: name || email,
+          email: email,
+          role: 'Applicant Candidate',
+          registrationDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          status: 'Registered Candidate'
+        };
+
+        setRegisteredCandidate(newCandidate);
+        setShowSlipModal(true);
+        toast.success('Candidate registration successful! You can now print your slip.');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -108,6 +120,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-[85vh] grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden rounded-2xl bg-white border border-[#008751]/10 shadow-[0_20px_80px_rgba(0,135,81,0.06)]">
+      {showSlipModal && registeredCandidate && (
+        <CandidateRegistrationSlip
+          candidate={registeredCandidate}
+          onClose={() => {
+            setShowSlipModal(false);
+            setIsLogin(true);
+          }}
+        />
+      )}
       
       {/* LEFT: AUTH FORM */}
       <div className="lg:col-span-12 xl:col-span-5 p-8 md:p-12 space-y-8 border-r border-[#008751]/8 flex flex-col justify-center bg-white">
