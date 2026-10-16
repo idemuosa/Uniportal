@@ -9,9 +9,20 @@ import admin from 'firebase-admin';
 import { Server } from "socket.io";
 import http from 'http';
 import winston from 'winston';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pkg from './database.cjs';
 const { sequelize, User, Payment, Attendance, Application } = pkg;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure logs directory exists
+if (!fs.existsSync(path.join(__dirname, 'logs'))) {
+  fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
+}
 
 // 🪵 Professional Logger
 const logger = winston.createLogger({
@@ -22,8 +33,8 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console({ format: winston.format.simple() }),
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
+    new winston.transports.File({ filename: path.join(__dirname, 'logs/error.log'), level: 'error' }),
+    new winston.transports.File({ filename: path.join(__dirname, 'logs/combined.log') })
   ],
 });
 
@@ -63,6 +74,9 @@ const io = new Server(server, { cors: { origin: corsOrigin, methods: ["GET", "PO
 
 app.use(cors({ origin: corsOrigin }));
 app.use(bodyParser.json());
+
+// 📦 Serve Static Frontend Assets (dist)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // 🤖 AI Command Hub (Gemini Pro)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || "");
@@ -186,6 +200,19 @@ io.on('connection', (socket) => {
     socket.join(`user_${uid}`);
     logger.info(`👤 User ${uid} connected to real-time hub`);
   });
+});
+
+// 🌐 SPA Fallback Routing for Client-Side Navigation
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Frontend build not found. Please build the client app.');
+  }
 });
 
 // ------------------------------------------------------------------
