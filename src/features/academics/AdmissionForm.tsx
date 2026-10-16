@@ -5,7 +5,7 @@ import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FACULTIES, DEPARTMENTS } from '../../constants';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CameraCapture from '../../components/CameraCapture';
 import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
@@ -90,11 +90,20 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
     setSubmitting(true);
     try {
-      // Keep Firebase for uploads for now as backend might not support binary yet
+      // Safely attempt upload to Firebase, fallback to Data URL if storage is unavailable
       const uploadBiometric = async (blob: Blob, path: string) => {
-        const fileRef = ref(storage, `applications/${user.uid}/${path}.jpg`);
-        await uploadBytes(fileRef, blob);
-        return getDownloadURL(fileRef);
+        try {
+          const fileRef = ref(storage, `applications/${user.uid}/${path}.jpg`);
+          await uploadBytes(fileRef, blob);
+          return await getDownloadURL(fileRef);
+        } catch (storageErr) {
+          console.warn(`Firebase Storage upload failed for ${path}, using Data URL fallback:`, storageErr);
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
       };
 
       const [faceUrl, leftIndexFingerUrl, rightIndexFingerUrl] = await Promise.all([
@@ -103,15 +112,23 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         uploadBiometric(biometricBlobs.rightIndex, 'right_index'),
       ]);
 
-      // Resolve Faculty/Department IDs
-      const portalRes = await api.get('/portal/faculties/');
-      const faculty = portalRes.data.find((f: any) => f.name === formData.faculty);
-      const department = faculty?.departments?.find((d: any) => d.name === formData.department);
+      // Resolve Faculty/Department IDs safely
+      let facultyId: any = undefined;
+      let departmentId: any = undefined;
+      try {
+        const portalRes = await api.get('/portal/faculties/');
+        const faculties = Array.isArray(portalRes.data) ? portalRes.data : (portalRes.data?.results || []);
+        const faculty = faculties.find((f: any) => f.name === formData.faculty);
+        facultyId = faculty?.id;
+        departmentId = faculty?.departments?.find((d: any) => d.name === formData.department)?.id;
+      } catch (fErr) {
+        console.warn('Faculty list retrieval warning:', fErr);
+      }
 
       const payload = {
-        type: formData.type,
-        faculty: faculty?.id,
-        department: department?.id,
+        type: formData.type || 'Undergraduate Full-Time',
+        faculty: facultyId,
+        department: departmentId,
         gender: formData.gender,
         date_of_birth: formData.dateOfBirth,
         phone_number: formData.phoneNumber,
@@ -129,14 +146,14 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         status: 'pending',
       };
 
-      await api.post('/academics/applications/', payload);
+      const res = await api.post('/academics/applications/', payload);
 
       // 🔔 Dispatch Institutional Notification
       try {
         await api.post('/notify', {
           to: user.email,
           subject: 'Admission Application Received',
-          body: `Dear ${user.name}, your application for <b>${formData.type}</b> in the department of <b>${formData.department}</b> has been received and is under review.`,
+          body: `Dear ${user.name}, your application for <b>${formData.type || 'Undergraduate Full-Time'}</b> in the department of <b>${formData.department}</b> has been received and is under review.`,
           type: 'success',
           userId: user.uid
         });
@@ -145,9 +162,11 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
       }
 
       toast.success('Professional Application Submitted');
-      window.location.reload();
+      if (res.data) {
+        setApplication(res.data);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Submission error:', err);
       toast.error('Submission failed. Check network.');
     } finally {
       setSubmitting(false);
