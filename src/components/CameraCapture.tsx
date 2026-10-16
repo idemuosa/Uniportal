@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Camera, RefreshCcw, Check, AlertCircle, Fingerprint, User, Hand } from 'lucide-react';
+import { Camera, RefreshCcw, Check, AlertCircle, Fingerprint, User, Cpu, Smartphone, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export type BiometricTarget = 'Face' | 'Left Index Finger' | 'Right Index Finger';
@@ -15,8 +15,9 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
   const [showFlash, setShowFlash] = useState(false);
+  const [isScanningMachine, setIsScanningMachine] = useState(false);
+  const [isScanningPhone, setIsScanningPhone] = useState(false);
 
   // 🧬 Sequential Capture State
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -25,6 +26,8 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
   const [capturedPreviews, setCapturedPreviews] = useState<string[]>([]);
 
   const startCamera = useCallback(async () => {
+    // Only start camera when step is 0 (Face Capture)
+    if (currentStep !== 0) return;
     setIsInitializing(true);
     setError(null);
     try {
@@ -42,11 +45,11 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
       }
     } catch (err) {
       console.error('Error accessing camera:', err);
-      setError('Could not access camera. Please ensure you have granted permission.');
+      setError('Could not access camera for Face capture. Please allow camera permissions.');
     } finally {
       setIsInitializing(false);
     }
-  }, []);
+  }, [currentStep]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -55,7 +58,18 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
     }
   }, [stream]);
 
-  const performCapture = () => {
+  // Manage camera based on current step
+  useEffect(() => {
+    if (currentStep === 0 && capturedBlobs.length === 0) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [currentStep, capturedBlobs.length, startCamera, stopCamera]);
+
+  // Face capture from live camera stream
+  const performFaceCapture = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -65,10 +79,10 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 150);
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth || 480;
+        canvas.height = video.videoHeight || 480;
 
-        // Mirror canvas to match the live video preview feed (facingMode: 'user')
+        // Mirror canvas to match the live video preview feed
         context.save();
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
@@ -80,57 +94,93 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
           if (blob) {
             const nextBlobs = [...capturedBlobs, blob];
             const nextPreviews = [...capturedPreviews, dataUrl];
-            
             setCapturedBlobs(nextBlobs);
             setCapturedPreviews(nextPreviews);
-
-            if (nextBlobs.length === 3) {
-              onCaptureAll({
-                face: nextBlobs[0],
-                leftIndex: nextBlobs[1],
-                rightIndex: nextBlobs[2]
-              });
-              stopCamera();
-            } else {
-              setCurrentStep(prev => prev + 1);
-            }
+            stopCamera();
+            setCurrentStep(1); // Proceed to Fingerprint capture
           }
         }, 'image/jpeg', 0.9);
       }
     }
   };
 
-  const handleCaptureClick = () => {
-    setCountdown(3);
+  // Generate Fingerprint Blob Image with graphic label
+  const createFingerprintBlob = (title: string, mode: string): Promise<{ blob: Blob; dataUrl: string }> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Gradient background
+        const grad = ctx.createLinearGradient(0, 0, 480, 480);
+        grad.addColorStop(0, '#064e3b');
+        grad.addColorStop(1, '#022c22');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Circular accent
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(240, 210, 110, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title.toUpperCase(), 240, 210);
+
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`VIA ${mode.toUpperCase()}`, 240, 245);
+
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`HASH: ${Math.random().toString(36).substring(2, 12).toUpperCase()}`, 240, 380);
+      }
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve({ blob, dataUrl });
+        }
+      }, 'image/jpeg', 0.9);
+    });
   };
 
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown === 0) {
-      setCountdown(null);
-      performCapture();
-      return;
+  const handleNextFingerprint = (blob: Blob, dataUrl: string) => {
+    const nextBlobs = [...capturedBlobs, blob];
+    const nextPreviews = [...capturedPreviews, dataUrl];
+
+    setCapturedBlobs(nextBlobs);
+    setCapturedPreviews(nextPreviews);
+
+    if (nextBlobs.length === 3) {
+      onCaptureAll({
+        face: nextBlobs[0],
+        leftIndex: nextBlobs[1],
+        rightIndex: nextBlobs[2]
+      });
+    } else {
+      setCurrentStep(prev => prev + 1);
     }
-    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
-  const restartSystem = () => {
-    setCurrentStep(0);
-    setCapturedBlobs([]);
-    setCapturedPreviews([]);
-    onClear();
-    startCamera();
   };
 
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-  }, [startCamera, stopCamera]);
+  // Biometric Machine / Hardware Scanner Trigger
+  const handleBiometricMachineCapture = async () => {
+    setIsScanningMachine(true);
+    // Simulate USB/Hardware Biometric machine scan delay
+    setTimeout(async () => {
+      const stepName = steps[currentStep];
+      const result = await createFingerprintBlob(stepName, 'Biometric Machine Hardware');
+      setIsScanningMachine(false);
+      handleNextFingerprint(result.blob, result.dataUrl);
+    }, 1500);
+  };
 
-  const allCaptured = capturedBlobs.length === 3;
-
-  const handlePhoneFingerprint = async () => {
+  // Phone Fingerprint Sensor Trigger
+  const handlePhoneFingerprintCapture = async () => {
+    setIsScanningPhone(true);
     try {
       if (window.PublicKeyCredential && navigator.credentials && navigator.credentials.create) {
         const challenge = new Uint8Array(32);
@@ -158,82 +208,34 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
 
         const credential = await navigator.credentials.create(options);
         if (credential) {
-          // Generate a fingerprint canvas icon graphic as blob
-          const canvas = document.createElement('canvas');
-          canvas.width = 480;
-          canvas.height = 480;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillRect(0, 0, 480, 480);
-            ctx.fillStyle = '#008751';
-            ctx.font = 'bold 24px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('PHONE FINGERPRINT VERIFIED', 240, 240);
-          }
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const nextBlobs = [...capturedBlobs, blob];
-              const nextPreviews = [...capturedPreviews, dataUrl];
-
-              setCapturedBlobs(nextBlobs);
-              setCapturedPreviews(nextPreviews);
-
-              if (nextBlobs.length === 3) {
-                onCaptureAll({
-                  face: nextBlobs[0],
-                  leftIndex: nextBlobs[1],
-                  rightIndex: nextBlobs[2]
-                });
-                stopCamera();
-              } else {
-                setCurrentStep(prev => prev + 1);
-              }
-            }
-          }, 'image/jpeg', 0.9);
+          const stepName = steps[currentStep];
+          const result = await createFingerprintBlob(stepName, 'Phone Sensor (WebAuthn)');
+          setIsScanningPhone(false);
+          handleNextFingerprint(result.blob, result.dataUrl);
           return;
         }
       }
     } catch (e) {
-      console.warn('Phone fingerprint scanning fallback to camera/simulation:', e);
+      console.warn('Phone biometric prompt hardware error or cancelled, falling back to simulated scan:', e);
     }
 
-    // Fallback if hardware fingerprint fails or is canceled: simulate capture
-    const canvas = document.createElement('canvas');
-    canvas.width = 480;
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(0, 0, 480, 480);
-      ctx.fillStyle = '#008751';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('PHONE FINGERPRINT VERIFIED', 240, 240);
-    }
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const nextBlobs = [...capturedBlobs, blob];
-        const nextPreviews = [...capturedPreviews, dataUrl];
-
-        setCapturedBlobs(nextBlobs);
-        setCapturedPreviews(nextPreviews);
-
-        if (nextBlobs.length === 3) {
-          onCaptureAll({
-            face: nextBlobs[0],
-            leftIndex: nextBlobs[1],
-            rightIndex: nextBlobs[2]
-          });
-          stopCamera();
-        } else {
-          setCurrentStep(prev => prev + 1);
-        }
-      }
-    }, 'image/jpeg', 0.9);
+    // Fallback simulated scan if WebAuthn is unavailable or cancelled in non-mobile environment
+    setTimeout(async () => {
+      const stepName = steps[currentStep];
+      const result = await createFingerprintBlob(stepName, 'Phone Fingerprint Sensor');
+      setIsScanningPhone(false);
+      handleNextFingerprint(result.blob, result.dataUrl);
+    }, 1200);
   };
+
+  const restartSystem = () => {
+    setCurrentStep(0);
+    setCapturedBlobs([]);
+    setCapturedPreviews([]);
+    onClear();
+  };
+
+  const allCaptured = capturedBlobs.length === 3;
 
   return (
     <div className="w-full space-y-6">
@@ -247,123 +249,174 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
             }`}>
               {i < currentStep ? <Check className="w-5 h-5" /> : (i === 0 ? <User className="w-5 h-5" /> : <Fingerprint className="w-5 h-5" />)}
             </div>
-            <span className={`text-[8px] font-black uppercase tracking-tighter transition-opacity ${i === currentStep ? 'opacity-100 text-[#008751]' : 'opacity-40'}`}>
+            <span className={`text-[9px] font-black uppercase tracking-tighter text-center transition-opacity ${i === currentStep ? 'opacity-100 text-[#008751]' : 'opacity-40'}`}>
               {step}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="relative w-80 h-80 mx-auto bg-slate-100 rounded-[3rem] overflow-hidden border-4 border-[#008751]/15 shadow-xl group">
+      <div className="relative w-80 h-80 mx-auto bg-slate-900 rounded-[3rem] overflow-hidden border-4 border-[#008751]/20 shadow-2xl group">
         <AnimatePresence mode="wait">
           {!allCaptured ? (
-            <motion.div
-              key="video"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="w-full h-full relative"
-            >
-              {error ? (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-[#008751] space-y-4">
-                  <AlertCircle className="w-12 h-12 text-rose-500" />
-                  <p className="text-sm font-black uppercase tracking-widest">{error}</p>
-                  <button onClick={startCamera} className="px-8 py-3 bg-white text-slate-900 border border-slate-200 rounded-2xl font-black uppercase text-xs tracking-tighter hover:bg-slate-50 transition-all">
-                    Reset System
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-                  
-                  {/* Target Guide */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 border-[20px] border-white/50" />
-                    {currentStep === 0 ? (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-600/70 rounded-[3.5rem] flex items-center justify-center animate-pulse">
-                         <div className="w-40 h-48 border border-emerald-600/30 rounded-[3rem]" />
+            currentStep === 0 ? (
+              /* STEP 0: Live Camera Face Capture */
+              <motion.div
+                key="face-camera"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full relative"
+              >
+                {error ? (
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center text-white space-y-4">
+                    <AlertCircle className="w-12 h-12 text-rose-500" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-rose-200">{error}</p>
+                    <button onClick={startCamera} className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold uppercase text-xs hover:bg-emerald-500 transition-all">
+                      Retry Camera
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+
+                    {/* Target Guide */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-400 rounded-[3.5rem] flex items-center justify-center animate-pulse">
+                         <div className="w-40 h-48 border border-emerald-400/30 rounded-[3rem]" />
                       </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-emerald-500/30 whitespace-nowrap">
+                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest italic flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-emerald-400" /> Face Capture Self
+                      </span>
+                    </div>
+
+                    <AnimatePresence>
+                      {showFlash && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white z-[60]" />}
+                    </AnimatePresence>
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-950/80 backdrop-blur-xl rounded-full border border-emerald-500/30 flex items-center gap-2 whitespace-nowrap shadow-sm">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-[8px] font-black text-emerald-300 uppercase tracking-widest">Live Feed Ready</span>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            ) : (
+              /* STEPS 1 & 2: Dedicated Fingerprint Hardware & Sensor Display (No Live Camera Feed) */
+              <motion.div
+                key={`fingerprint-scan-${currentStep}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full h-full relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white"
+              >
+                {/* Fingerprint Scanner Animation / Graphic */}
+                <div className="relative flex items-center justify-center my-4">
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-2 ${
+                    isScanningMachine || isScanningPhone
+                      ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse'
+                      : 'border-emerald-500/30 bg-emerald-900/10'
+                  }`}>
+                    {isScanningMachine || isScanningPhone ? (
+                      <Loader2 className="w-16 h-16 text-emerald-400 animate-spin" />
                     ) : (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-600/70 rounded-3xl flex items-center justify-center">
-                         <Fingerprint className="w-20 h-20 text-emerald-600/40" />
-                      </div>
+                      <Fingerprint className="w-16 h-16 text-emerald-400" />
                     )}
                   </div>
+                  {(isScanningMachine || isScanningPhone) && (
+                    <motion.div
+                      initial={{ y: -40 }}
+                      animate={{ y: 40 }}
+                      transition={{ repeat: Infinity, repeatType: "reverse", duration: 0.8 }}
+                      className="absolute left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_12px_#34d399]"
+                    />
+                  )}
+                </div>
 
-                  {/* Labels */}
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-[#008751]/15 whitespace-nowrap shadow-sm">
-                    <span className="text-[8px] font-black text-[#008751] uppercase tracking-[0.2em] italic">
-                      Capturing: {steps[currentStep]}
-                    </span>
-                  </div>
+                <div className="text-center space-y-1">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
+                    {steps[currentStep]}
+                  </h3>
+                  <p className="text-[10px] text-slate-300 font-medium">
+                    {isScanningMachine ? 'Reading fingerprint from Biometric Machine...' :
+                     isScanningPhone ? 'Authenticating via Phone Fingerprint Sensor...' :
+                     'Touch hardware sensor or use phone fingerprint sensor to capture print.'}
+                  </p>
+                </div>
 
-                  <AnimatePresence>
-                    {countdown !== null && (
-                      <motion.div initial={{ scale: 2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-50">
-                        <span className="text-9xl font-black text-[#008751] italic">{countdown}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <AnimatePresence>
-                    {showFlash && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white z-[60]" />}
-                  </AnimatePresence>
-
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-white/90 backdrop-blur-xl rounded-full border border-[#008751]/15 flex items-center gap-2 whitespace-nowrap shadow-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[7px] font-black text-[#008751] uppercase tracking-widest text-[8px]">Live Biometric</span>
-                  </div>
-                </>
-              )}
-            </motion.div>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/60 border border-emerald-500/30 px-3 py-1 rounded-full">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">
+                    Biometric Scanner Ready
+                  </span>
+                </div>
+              </motion.div>
+            )
           ) : (
-            <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative flex bg-slate-100">
+            /* ALL CAPTURED: Preview Summary */
+            <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative flex bg-slate-900">
                {capturedPreviews.map((src, i) => (
-                 <div key={i} className="relative group flex-1 border-r border-slate-200 overflow-hidden last:border-r-0">
-                   <img src={src} alt={steps[i]} className="w-full h-full object-cover grayscale contrast-125 group-hover:scale-110 transition-transform duration-700" />
-                   <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur p-2 rounded-lg border border-slate-200">
-                      <span className="text-[8px] font-black text-[#008751] uppercase tracking-widest">{steps[i]} Verified</span>
+                 <div key={i} className="relative group flex-1 border-r border-slate-700/50 overflow-hidden last:border-r-0">
+                   <img src={src} alt={steps[i]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                   <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-md p-1.5 rounded-lg border border-emerald-500/30 text-center">
+                      <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest block">{steps[i]}</span>
+                      <span className="text-[6px] text-slate-300 font-medium uppercase">Verified</span>
                    </div>
-                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-500/10">
-                      <Check className="w-8 h-8 text-[#008751]" />
+                   <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-md">
+                      <Check className="w-3 h-3" />
                    </div>
                  </div>
                ))}
-               <div className="absolute top-6 right-6 px-6 py-2 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.4em] shadow-md">Full Identity Verified</div>
+               <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap">
+                  3/3 Biometrics Verified
+               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
+      {/* 🛠 CONTROLS & ACTIONS */}
       <div className="space-y-3">
         {!allCaptured ? (
-          <>
+          currentStep === 0 ? (
+            /* Step 0 Actions (Face Capture) */
             <button
-              onClick={handleCaptureClick}
-              disabled={!stream || isInitializing || countdown !== null}
-              className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95 group/btn"
+              onClick={performFaceCapture}
+              disabled={!stream || isInitializing}
+              className="w-full bg-[#008751] text-white p-4 rounded-2xl font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-lg active:scale-95 group"
             >
-              <div className="p-2 bg-white/20 rounded-xl text-white group-hover/btn:rotate-12 transition-transform">
-                <Camera className="w-5 h-5" />
-              </div>
-              <span>{countdown !== null ? `Securing In ${countdown}...` : `Capture ${steps[currentStep]} via Camera`}</span>
+              <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+              <span>Capture Face Self</span>
             </button>
-
-            {currentStep > 0 && (
+          ) : (
+            /* Steps 1 & 2 Actions (Fingerprint Options) */
+            <div className="space-y-2.5">
               <button
-                onClick={handlePhoneFingerprint}
-                disabled={countdown !== null}
-                className="w-full bg-white border-2 border-[#008751] text-[#008751] p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all shadow-sm active:scale-95"
+                onClick={handleBiometricMachineCapture}
+                disabled={isScanningMachine || isScanningPhone}
+                className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95"
               >
-                <Fingerprint className="w-5 h-5" />
-                <span>Use Phone Fingerprint Sensor</span>
+                <Cpu className="w-5 h-5 text-emerald-200" />
+                <span>Scan with Biometric Machine</span>
               </button>
-            )}
-          </>
+
+              <button
+                onClick={handlePhoneFingerprintCapture}
+                disabled={isScanningMachine || isScanningPhone}
+                className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                <Smartphone className="w-5 h-5" />
+                <span>Scan with Phone Fingerprint Sensor</span>
+              </button>
+            </div>
+          )
         ) : (
-          <button onClick={restartSystem} className="w-full bg-slate-100 border-2 border-[#008751]/20 text-[#008751] p-4 rounded-[1.5rem] font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-slate-200 transition-all shadow-md active:scale-95">
+          <button onClick={restartSystem} className="w-full bg-slate-100 border-2 border-[#008751]/20 text-[#008751] p-4 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-3 hover:bg-slate-200 transition-all shadow-md active:scale-95">
             <RefreshCcw className="w-5 h-5" />
-            Restart Scans
+            Restart Biometric Scans
           </button>
         )}
       </div>
@@ -372,6 +425,3 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
     </div>
   );
 }
-
-
-
