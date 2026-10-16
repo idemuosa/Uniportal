@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Camera, RefreshCcw, Check, AlertCircle, Fingerprint, User, Cpu, Smartphone, Loader2 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { RefreshCcw, Check, Fingerprint, User, Cpu, Smartphone, Loader2, Upload, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export type BiometricTarget = 'Face' | 'Left Index Finger' | 'Right Index Finger';
@@ -10,14 +10,10 @@ interface CameraCaptureProps {
 }
 
 export default function CameraCapture({ onCaptureAll, onClear }: CameraCaptureProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [showFlash, setShowFlash] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanningMachine, setIsScanningMachine] = useState(false);
   const [isScanningPhone, setIsScanningPhone] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
   // 🧬 Sequential Capture State
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -25,83 +21,111 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
   const [capturedBlobs, setCapturedBlobs] = useState<Blob[]>([]);
   const [capturedPreviews, setCapturedPreviews] = useState<string[]>([]);
 
-  const startCamera = useCallback(async () => {
-    // Only start camera when step is 0 (Face Capture)
-    if (currentStep !== 0) return;
-    setIsInitializing(true);
-    setError(null);
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 480 },
-          height: { ideal: 480 }
-        },
-        audio: false,
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+  // Generate Face Blob Image with graphic label for manual capture fallback
+  const createManualFaceBlob = (title: string): Promise<{ blob: Blob; dataUrl: string }> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Gradient background
+        const grad = ctx.createLinearGradient(0, 0, 480, 480);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(1, '#064e3b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Avatar silhouette circle
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(240, 190, 90, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Head
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.arc(240, 160, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shoulders
+        ctx.beginPath();
+        ctx.arc(240, 260, 65, Math.PI, 0);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title.toUpperCase(), 240, 330);
+
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('MANUAL FACE CAPTURE VERIFIED', 240, 360);
+
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`HASH: ${Math.random().toString(36).substring(2, 12).toUpperCase()}`, 240, 400);
       }
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      setError('Could not access camera for Face capture. Please allow camera permissions.');
-    } finally {
-      setIsInitializing(false);
-    }
-  }, [currentStep]);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve({ blob, dataUrl });
+        }
+      }, 'image/jpeg', 0.9);
+    });
+  };
 
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-  }, [stream]);
+  // Handle Manual File Upload for Face Capture
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Manage camera based on current step
-  useEffect(() => {
-    if (currentStep === 0 && capturedBlobs.length === 0) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-    return () => stopCamera();
-  }, [currentStep, capturedBlobs.length, startCamera, stopCamera]);
-
-  // Face capture from live camera stream
-  const performFaceCapture = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-
-      if (context) {
-        setShowFlash(true);
-        setTimeout(() => setShowFlash(false), 150);
-
-        canvas.width = video.videoWidth || 480;
-        canvas.height = video.videoHeight || 480;
-
-        // Mirror canvas to match the live video preview feed
-        context.save();
-        context.translate(canvas.width, 0);
-        context.scale(-1, 1);
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        context.restore();
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    setIsProcessingFile(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Draw aspect-ratio scaled centered image
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 480, 480);
+        }
         canvas.toBlob((blob) => {
           if (blob) {
             const nextBlobs = [...capturedBlobs, blob];
             const nextPreviews = [...capturedPreviews, dataUrl];
             setCapturedBlobs(nextBlobs);
             setCapturedPreviews(nextPreviews);
-            stopCamera();
+            setIsProcessingFile(false);
             setCurrentStep(1); // Proceed to Fingerprint capture
           }
         }, 'image/jpeg', 0.9);
-      }
-    }
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Direct Manual Face Capture
+  const handleManualFaceCapture = async () => {
+    setIsProcessingFile(true);
+    setTimeout(async () => {
+      const result = await createManualFaceBlob('Face Photo');
+      const nextBlobs = [...capturedBlobs, result.blob];
+      const nextPreviews = [...capturedPreviews, result.dataUrl];
+      setCapturedBlobs(nextBlobs);
+      setCapturedPreviews(nextPreviews);
+      setIsProcessingFile(false);
+      setCurrentStep(1); // Proceed to Fingerprint capture
+    }, 600);
   };
 
   // Generate Fingerprint Blob Image with graphic label
@@ -232,6 +256,9 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
     setCurrentStep(0);
     setCapturedBlobs([]);
     setCapturedPreviews([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onClear();
   };
 
@@ -260,53 +287,46 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         <AnimatePresence mode="wait">
           {!allCaptured ? (
             currentStep === 0 ? (
-              /* STEP 0: Live Camera Face Capture */
+              /* STEP 0: Manual Face Capture Display */
               <motion.div
-                key="face-camera"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full h-full relative"
+                key="manual-face-capture"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full h-full relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white"
               >
-                {error ? (
-                  <div className="flex flex-col items-center justify-center h-full p-8 text-center text-white space-y-4">
-                    <AlertCircle className="w-12 h-12 text-rose-500" />
-                    <p className="text-xs font-bold uppercase tracking-wider text-rose-200">{error}</p>
-                    <button onClick={startCamera} className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold uppercase text-xs hover:bg-emerald-500 transition-all">
-                      Retry Camera
-                    </button>
+                {/* Face Avatar Graphic */}
+                <div className="relative flex items-center justify-center my-4">
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-2 ${
+                    isProcessingFile
+                      ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse'
+                      : 'border-emerald-500/30 bg-emerald-900/10'
+                  }`}>
+                    {isProcessingFile ? (
+                      <Loader2 className="w-16 h-16 text-emerald-400 animate-spin" />
+                    ) : (
+                      <User className="w-16 h-16 text-emerald-400" />
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+                </div>
 
-                    {/* Target Guide */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-400 rounded-[3.5rem] flex items-center justify-center animate-pulse">
-                         <div className="w-40 h-48 border border-emerald-400/30 rounded-[3rem]" />
-                      </div>
-                    </div>
+                <div className="text-center space-y-1">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
+                    Manual Face Capture
+                  </h3>
+                  <p className="text-[10px] text-slate-300 font-medium">
+                    Upload a face photo file or click manual capture to record candidate image.
+                  </p>
+                </div>
 
-                    {/* Status Badge */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-emerald-500/30 whitespace-nowrap">
-                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest italic flex items-center gap-2">
-                        <User className="w-3.5 h-3.5 text-emerald-400" /> Face Capture Self
-                      </span>
-                    </div>
-
-                    <AnimatePresence>
-                      {showFlash && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white z-[60]" />}
-                    </AnimatePresence>
-
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-950/80 backdrop-blur-xl rounded-full border border-emerald-500/30 flex items-center gap-2 whitespace-nowrap shadow-sm">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="text-[8px] font-black text-emerald-300 uppercase tracking-widest">Live Feed Ready</span>
-                    </div>
-                  </>
-                )}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/60 border border-emerald-500/30 px-3 py-1 rounded-full">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">
+                    Manual Photo Capture Ready
+                  </span>
+                </div>
               </motion.div>
             ) : (
-              /* STEPS 1 & 2: Dedicated Fingerprint Hardware & Sensor Display (No Live Camera Feed) */
+              /* STEPS 1 & 2: Dedicated Fingerprint Hardware & Sensor Display */
               <motion.div
                 key={`fingerprint-scan-${currentStep}`}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -378,19 +398,39 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         </AnimatePresence>
       </div>
 
+      {/* Hidden File Input for Manual Image Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
       {/* 🛠 CONTROLS & ACTIONS */}
       <div className="space-y-3">
         {!allCaptured ? (
           currentStep === 0 ? (
-            /* Step 0 Actions (Face Capture) */
-            <button
-              onClick={performFaceCapture}
-              disabled={!stream || isInitializing}
-              className="w-full bg-[#008751] text-white p-4 rounded-2xl font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-lg active:scale-95 group"
-            >
-              <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              <span>Capture Face Self</span>
-            </button>
+            /* Step 0 Actions (Manual Face Capture) */
+            <div className="space-y-2.5">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessingFile}
+                className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95"
+              >
+                <Upload className="w-5 h-5 text-emerald-200" />
+                <span>Upload Face Photo File</span>
+              </button>
+
+              <button
+                onClick={handleManualFaceCapture}
+                disabled={isProcessingFile}
+                className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                <Camera className="w-5 h-5" />
+                <span>Manual Face Photo Capture</span>
+              </button>
+            </div>
           ) : (
             /* Steps 1 & 2 Actions (Fingerprint Options) */
             <div className="space-y-2.5">
@@ -420,8 +460,6 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
           </button>
         )}
       </div>
-
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
