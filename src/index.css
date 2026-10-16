@@ -1,6 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 @theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: 'Inter', serif;
+  --font-mono: 'Inter', monospace;
+  --font-inter: 'Inter', sans-serif;
+
   --color-nysc-green: #008751;
   --color-neon-purple: #008751;
   --color-neon-magenta: #16a34a;
@@ -25,7 +31,7 @@
 @layer base {
   html {
     font-size: 15px; /* Base scaling */
-    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
 
   @media (max-width: 640px) {
@@ -36,7 +42,11 @@
 
   body {
     @apply bg-white text-[#008751] antialiased;
-    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  * {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
 }
 
