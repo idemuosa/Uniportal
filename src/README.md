@@ -59,7 +59,7 @@
 
 ### Reusable (`components/`)
 
-- Biometric camera capture (`CameraCapture.tsx`)
+- Biometric capture (`CameraCapture.tsx`)
 
 ## 🚀 Quick Start
 
