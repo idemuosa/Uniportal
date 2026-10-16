@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: uniportal
+    env: docker
+    plan: free
+    rootDir: .
+    dockerfilePath: Dockerfile
+    autoDeploy: true
