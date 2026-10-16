@@ -52,7 +52,7 @@ export default function Layout({ children, user }: LayoutProps) {
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-black uppercase tracking-tighter italic leading-none">LUKKE PORTAL</span>
-                <span className="text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mt-1 hidden sm:block">Federal University Lukke</span>
+                <span className="text-[8px] font-bold opacity-40 uppercase tracking-[0.2em] mt-1 hidden sm:block">Federal University Lukke</span>
               </div>
             </Link>
 
@@ -98,7 +98,7 @@ export default function Layout({ children, user }: LayoutProps) {
               ) : (
                 <Link
                   to="/auth"
-                  className="bg-[#008751] text-white px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider text-xs hover:bg-[#006e41] transition active:scale-95 hidden sm:block"
+                  className="bg-[#008751] text-white px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider text-xs hover:bg-[#006e41] transition active:scale-95 hidden sm:block"
                 >
                   Login
                 </Link>
@@ -118,7 +118,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
         {/* Mobile Navigation Menu */}
         <div className={`lg:hidden transition-all duration-300 ease-in-out border-b border-[#008751]/10 bg-white/95 backdrop-blur-xl overflow-hidden ${isMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="px-6 py-8 space-y-4">
+          <div className="px-4 py-4 space-y-2.5">
             <MobileNavLink to="/" active={isActive('/')} onClick={() => setIsMenuOpen(false)}>Home</MobileNavLink>
             {user && (
               <>
@@ -134,17 +134,17 @@ export default function Layout({ children, user }: LayoutProps) {
                   <Link 
                     to="/admin" 
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 text-amber-600 font-bold uppercase tracking-widest text-sm border border-amber-200"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-50 text-amber-600 font-bold uppercase tracking-widest text-xs border border-amber-200"
                   >
-                    <ShieldCheck className="w-5 h-5" /> Admin Control
+                    <ShieldCheck className="w-4 h-4" /> Admin Control
                   </Link>
                 )}
-                <div className="pt-4 mt-4 border-t border-[#008751]/10">
+                <div className="pt-2 mt-2 border-t border-[#008751]/10">
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-red-50 text-red-600 font-bold uppercase tracking-widest text-sm border border-red-100"
+                    className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-red-50 text-red-600 font-bold uppercase tracking-widest text-xs border border-red-100"
                   >
-                    <LogOut className="w-5 h-5" /> Sign Out
+                    <LogOut className="w-4 h-4" /> Sign Out
                   </button>
                 </div>
               </>
@@ -153,7 +153,7 @@ export default function Layout({ children, user }: LayoutProps) {
               <Link 
                 to="/auth" 
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#008751] text-white font-bold uppercase tracking-widest text-sm shadow-xl"
+                className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-[#008751] text-white font-bold uppercase tracking-widest text-xs shadow-md"
               >
                 Gateway Login
               </Link>
@@ -192,7 +192,7 @@ export default function Layout({ children, user }: LayoutProps) {
               <FileText className="w-6 h-6" />
            </div>
  
-           <p className="text-[11px] font-black text-[ #22c55e]/20 uppercase tracking-[0.1em]">
+           <p className="text-[9px] font-black text-[#008751]/40 uppercase tracking-[0.1em]">
              © 2026 Federal University Lukke • Central Registry Synchronization Active
            </p>
         </div>
@@ -206,7 +206,7 @@ function NavLink({ to, children, active, icon }: { to: string; children: ReactNo
     <Link
       to={to}
       className={`
-        px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300
+        px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all duration-300
         ${active 
           ? 'bg-[#008751]/10 text-[#008751] ring-1 ring-[#008751]/20' 
           : 'text-[#008751]/50 hover:text-[#008751] hover:bg-[#008751]/5'
@@ -225,9 +225,9 @@ function MobileNavLink({ to, children, active, onClick }: { to: string; children
       to={to}
       onClick={onClick}
       className={`
-        block p-5 rounded-xl text-lg font-black uppercase tracking-widest transition-all
+        block px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all
         ${active 
-          ? 'bg-[#008751] text-white shadow-xl shadow-[#008751]/20' 
+          ? 'bg-[#008751] text-white shadow-md shadow-[#008751]/20'
           : 'bg-slate-50 text-[#008751]/60 border border-[#008751]/5'
         }
       `}

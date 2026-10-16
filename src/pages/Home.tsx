@@ -44,7 +44,7 @@ export default function Home({ user }: HomeProps) {
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#008751]/70">Secure Academic Portal</span>
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-black text-[#008751] tracking-tight leading-snug uppercase">
+            <h1 className="text-2xl md:text-4xl font-black text-[#008751] tracking-tight leading-snug uppercase">
               Federal University <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-emerald-500 to-[#006e41]">Lukke Portal</span>
             </h1>
