@@ -4,6 +4,6 @@ services:
     runtime: docker
     plan: free
     rootDir: .
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: Dockerfile
     dockerContext: .
     autoDeployTrigger: commit
