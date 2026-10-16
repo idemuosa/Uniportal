@@ -5,7 +5,7 @@ import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FACULTIES, DEPARTMENTS } from '../../constants';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, Printer } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CameraCapture from '../../components/CameraCapture';
 import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
@@ -225,10 +225,40 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
-      {/* PROGRESS TRACKER */}
-      <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-[#008751]/10">
+      {/* MOBILE PROGRESS TRACKER (DROPDOWN) */}
+      <div className="md:hidden bg-slate-50 p-4 rounded-xl border border-[#008751]/10 flex flex-col gap-2">
+        <label htmlFor="step-select" className="text-[10px] font-black text-[#008751]/60 uppercase tracking-widest flex items-center justify-between">
+          <span>Application Step</span>
+          <span className="text-[#008751]">Step {stepItems.findIndex(s => s.id === step) + 1} of {stepItems.length}</span>
+        </label>
+        <div className="relative flex items-center">
+          <select
+            id="step-select"
+            value={step}
+            onChange={(e) => setStep(e.target.value as Step)}
+            className="w-full bg-white border border-[#008751]/20 rounded-xl p-3 pr-10 text-xs font-black text-[#008751] uppercase tracking-wider appearance-none focus:outline-none focus:ring-2 focus:ring-[#008751]"
+          >
+            {stepItems.map((s, i) => (
+              <option key={s.id} value={s.id}>
+                {i + 1}. {s.label}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 text-[#008751]">
+            <ChevronDown className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP PROGRESS TRACKER */}
+      <div className="hidden md:flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-[#008751]/10">
         {stepItems.map((s, i) => (
-          <div key={s.id} className="flex flex-col items-center gap-2 flex-1 relative">
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setStep(s.id as Step)}
+            className="flex flex-col items-center gap-2 flex-1 relative cursor-pointer"
+          >
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 z-10 ${
               step === s.id ? 'bg-[#008751] text-white scale-110 shadow-lg' :
               stepItems.findIndex(x => x.id === step) > i ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-300'
@@ -238,7 +268,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
             <span className={`text-[11px] font-black uppercase tracking-tighter ${step === s.id ? 'text-[#008751] opacity-100' : 'text-[#008751]/40 opacity-40'}`}>
               {s.label}
             </span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -372,7 +402,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <input placeholder="JAMB Registration Number" value={formData.jambRegNo} onChange={e => setFormData({...formData, jambRegNo: e.target.value})} className="w-full bg-slate-50 border-2 border-[#008751]/10 p-4 rounded-2xl font-black text-xs" />
-                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
+                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore || ''} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
                </div>
 
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -383,7 +413,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                          next[idx].subject = e.target.value;
                          setFormData({...formData, jambSubjects: next});
                        }} className="w-full bg-slate-50 border border-[#008751]/10 p-3 rounded-xl text-[10px] font-bold" />
-                       <input placeholder="Score" type="number" value={js.score} onChange={e => {
+                       <input placeholder="Score" type="number" value={js.score || ''} onChange={e => {
                          const next = [...formData.jambSubjects];
                          next[idx].score = Number(e.target.value);
                          setFormData({...formData, jambSubjects: next});
