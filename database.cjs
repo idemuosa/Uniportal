@@ -1,31 +1,43 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 require('dotenv').config();
 
-const dbUrl = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/uniportal';
+const dbUrl = process.env.DATABASE_URL;
 
-const sequelize = new Sequelize(dbUrl, {
-  dialect: 'postgres',
-  logging: false,
-  ...(process.env.DATABASE_URL ? {
+let sequelize;
+
+if (dbUrl) {
+  sequelize = new Sequelize(dbUrl, {
+    dialect: 'postgres',
+    logging: false,
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false // Necessary for many cloud providers like Railway/Render
+        rejectUnauthorized: false
       }
     }
-  } : {})
-});
+  });
+} else {
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: './uniportal.sqlite',
+    logging: false
+  });
+}
 
 // Define Models
 const User = sequelize.define('User', {
-  uid: { type: DataTypes.STRING, primaryKey: true }, // Firebase UID
+  uid: { type: DataTypes.STRING, primaryKey: true },
+  username: { type: DataTypes.STRING, unique: true },
   email: { type: DataTypes.STRING, unique: true },
+  password: { type: DataTypes.STRING },
+  firstName: { type: DataTypes.STRING },
+  lastName: { type: DataTypes.STRING },
   name: { type: DataTypes.STRING },
-  role: { type: DataTypes.ENUM('admin', 'student', 'staff', 'applicant'), defaultValue: 'student' },
+  role: { type: DataTypes.STRING, defaultValue: 'student' },
   faculty: { type: DataTypes.STRING },
   department: { type: DataTypes.STRING },
   level: { type: DataTypes.STRING, defaultValue: '100L' },
-  matricNo: { type: DataTypes.STRING, unique: true },
+  matricNo: { type: DataTypes.STRING },
   photoUrl: { type: DataTypes.STRING }
 });
 
@@ -34,7 +46,7 @@ const Payment = sequelize.define('Payment', {
   uid: { type: DataTypes.STRING },
   amount: { type: DataTypes.DECIMAL(10, 2) },
   type: { type: DataTypes.STRING },
-  status: { type: DataTypes.STRING },
+  status: { type: DataTypes.STRING, defaultValue: 'pending' },
   transactionId: { type: DataTypes.STRING, unique: true },
   method: { type: DataTypes.STRING },
   createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
@@ -54,9 +66,9 @@ const Application = sequelize.define('Application', {
   type: { type: DataTypes.STRING },
   faculty: { type: DataTypes.STRING },
   department: { type: DataTypes.STRING },
-  status: { type: DataTypes.ENUM('pending', 'approved', 'rejected'), defaultValue: 'pending' },
+  status: { type: DataTypes.STRING, defaultValue: 'pending' },
   faceUrl: { type: DataTypes.STRING },
-  formData: { type: DataTypes.JSONB } // Store other form fields
+  formData: { type: DataTypes.JSON }
 });
 
 // Relationships
@@ -71,6 +83,7 @@ Application.belongsTo(User, { foreignKey: 'uid' });
 
 module.exports = {
   sequelize,
+  Op,
   User,
   Payment,
   Attendance,
