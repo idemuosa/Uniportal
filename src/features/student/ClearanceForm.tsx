@@ -110,7 +110,7 @@ export default function ClearanceForm({ user }: ClearanceFormProps) {
           {docs.map((doc) => (
             <div key={doc.id} className="bg-[#008751]/3 border border-[#008751]/8 rounded-[2.5rem] p-8 flex flex-col items-center text-center space-y-6 group hover:bg-emerald-500/5 transition-all">
               <div className={`p-5 rounded-2xl transition-colors ${doc.url ? 'bg-emerald-500/20 text-[#008751]' : 'bg-[#008751]/3 text-[#008751]/15'}`}>
-                {React.cloneElement(doc.icon as React.ReactElement, { className: 'w-8 h-8' })}
+                {React.cloneElement(doc.icon as React.ReactElement<any>, { className: 'w-8 h-8' })}
               </div>
               <div>
                 <p className="text-sm font-black text-[#008751] italic uppercase tracking-tight">{doc.label}</p>

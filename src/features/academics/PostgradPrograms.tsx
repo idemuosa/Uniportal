@@ -50,8 +50,9 @@ export default function PostgradPrograms() {
   const fetchDepartments = async () => {
     try {
       const response = await axios.get('/api/portal/postgrad-programs/');
-      const depts = [...new Set((response.data.results || response.data).map((p: PostgradProgram) => p.postgrad_details?.department_name))];
-      setDepartments(depts.filter(Boolean));
+      const rawDepts = (response.data.results || response.data).map((p: PostgradProgram) => p.postgrad_details?.department_name);
+      const depts = Array.from(new Set(rawDepts)).filter(Boolean) as string[];
+      setDepartments(depts);
     } catch (error) {
       console.error('Error fetching departments:', error);
     }
