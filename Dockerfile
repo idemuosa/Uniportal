@@ -1,5 +1,5 @@
-# Use Node.js LTS
-FROM node:18-slim
+# Use Node.js 20 LTS for Tailwind v4 / @tailwindcss/oxide compatibility
+FROM node:20-slim
 
 # Create app directory
 WORKDIR /app
