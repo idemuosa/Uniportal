@@ -49,9 +49,9 @@ docker-compose up --build
 
 This repository includes a `render.yaml` blueprint for automatic configuration on Render.
 
-- **Root Directory:** Set to `.` (the repository root).
-- **Dockerfile:** `./Dockerfile`
-- If **Root Directory** is accidentally configured as `node_backend` in Render service settings, the repository includes a `node_backend` alias symlink to maintain compatibility.
+- **Root Directory:** `.` (the repository root)
+- **Dockerfile Path:** `Dockerfile` (or `./Dockerfile`)
+- **Docker Context:** `.`
 
 ---
 **Institutional Registry • Digital Confirmation • 2025**

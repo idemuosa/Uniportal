@@ -1,8 +1,9 @@
 services:
   - type: web
     name: uniportal
-    env: docker
+    runtime: docker
     plan: free
     rootDir: .
     dockerfilePath: Dockerfile
-    autoDeploy: true
+    dockerContext: .
+    autoDeployTrigger: commit
