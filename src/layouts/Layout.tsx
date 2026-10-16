@@ -98,7 +98,7 @@ export default function Layout({ children, user }: LayoutProps) {
               ) : (
                 <Link
                   to="/auth"
-                  className="bg-[#008751] text-white px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider text-xs hover:bg-[#006e41] transition active:scale-95 hidden sm:block"
+                  className="bg-[#008751] text-white px-4 py-1.5 rounded-lg font-bold uppercase tracking-wider text-xs hover:bg-[#006e41] transition active:scale-95 hidden sm:block"
                 >
                   Login
                 </Link>
@@ -153,9 +153,9 @@ export default function Layout({ children, user }: LayoutProps) {
               <Link 
                 to="/auth" 
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#008751] text-white font-bold uppercase tracking-wider text-xs shadow-lg"
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#008751] text-white font-bold uppercase tracking-wider text-xs shadow-md"
               >
-                Gateway Login
+                Login
               </Link>
             )}
           </div>
