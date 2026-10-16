@@ -339,7 +339,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <input placeholder="JAMB Registration Number" value={formData.jambRegNo} onChange={e => setFormData({...formData, jambRegNo: e.target.value})} className="w-full bg-slate-50 border-2 border-[#008751]/10 p-4 rounded-2xl font-black text-xs" />
-                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
+                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore || ''} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
                </div>
 
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -350,7 +350,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                          next[idx].subject = e.target.value;
                          setFormData({...formData, jambSubjects: next});
                        }} className="w-full bg-slate-50 border border-[#008751]/10 p-3 rounded-xl text-[10px] font-bold" />
-                       <input placeholder="Score" type="number" value={js.score} onChange={e => {
+                       <input placeholder="Score" type="number" value={js.score || ''} onChange={e => {
                          const next = [...formData.jambSubjects];
                          next[idx].score = Number(e.target.value);
                          setFormData({...formData, jambSubjects: next});
