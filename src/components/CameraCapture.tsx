@@ -67,7 +67,13 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+
+        // Mirror canvas to match the live video preview feed (facingMode: 'user')
+        context.save();
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.restore();
         
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         canvas.toBlob((blob) => {
@@ -167,14 +173,14 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
                   
                   {/* Target Guide */}
                   <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 border-[25px] border-black/40" />
+                    <div className="absolute inset-0 border-[20px] border-black/40" />
                     {currentStep === 0 ? (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-72 border-2 border-emerald-500/50 rounded-3xl flex items-center justify-center animate-pulse">
-                         <div className="w-full h-full border-[1px] border-emerald-500/20 rounded-3xl" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-500/70 rounded-[3.5rem] flex items-center justify-center animate-pulse">
+                         <div className="w-40 h-48 border border-emerald-500/30 rounded-[3rem]" />
                       </div>
                     ) : (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-64 border-2 border-dashed border-emerald-500/50 rounded-3xl flex items-center justify-center">
-                         <Hand className="w-24 h-24 text-emerald-500/20" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-56 border-2 border-dashed border-emerald-500/70 rounded-3xl flex items-center justify-center">
+                         <Hand className="w-20 h-20 text-emerald-500/30" />
                       </div>
                     )}
                   </div>
@@ -209,7 +215,7 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
             <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative flex bg-neutral-900">
                {capturedPreviews.map((src, i) => (
                  <div key={i} className="relative group flex-1 border-r border-[#008751]/5 overflow-hidden last:border-r-0">
-                   <img src={src} alt={steps[i]} className="w-full h-full object-cover scale-x-[-1] grayscale contrast-125 group-hover:scale-110 transition-transform duration-700" />
+                   <img src={src} alt={steps[i]} className="w-full h-full object-cover grayscale contrast-125 group-hover:scale-110 transition-transform duration-700" />
                    <div className="absolute bottom-4 left-4 bg-slate-50 backdrop-blur p-2 rounded-lg">
                       <span className="text-[8px] font-black text-[#008751] uppercase tracking-widest">{steps[i]} Verified</span>
                    </div>
@@ -229,12 +235,12 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
           <button
             onClick={handleCaptureClick}
             disabled={!stream || isInitializing || countdown !== null}
-            className="w-full flex-1 bg-slate-50 text-neutral-950 p-4 rounded-[1.5rem] font-black uppercase tracking-tighter flex items-center justify-center gap-4 hover:bg-neutral-100 transition-all disabled:opacity-50 shadow-2xl active:scale-95 group/btn"
+            className="w-full flex-1 bg-slate-50 text-neutral-950 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-neutral-100 transition-all disabled:opacity-50 shadow-lg active:scale-95 group/btn"
           >
-            <div className="p-2 bg-neutral-950 rounded-lg text-[#008751] group-hover/btn:rotate-12 transition-transform">
-              <Camera className="w-20 h-20" />
+            <div className="p-2 bg-neutral-950 rounded-xl text-[#008751] group-hover/btn:rotate-12 transition-transform">
+              <Camera className="w-6 h-6" />
             </div>
-            {countdown !== null ? `Securing In ${countdown}...` : `Capture ${steps[currentStep]} Now`}
+            <span>{countdown !== null ? `Securing In ${countdown}...` : `Capture ${steps[currentStep]} Now`}</span>
           </button>
         ) : (
           <button onClick={restartSystem} className="w-full flex-1 bg-[#008751]/3 border-2 border-[#008751]/8 text-[#008751] p-4 rounded-[1.5rem] font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-[#008751]/5 transition-all shadow-xl active:scale-95">
