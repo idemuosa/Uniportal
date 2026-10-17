@@ -1033,12 +1033,46 @@ app.get('*', (req, res) => {
 // ------------------------------------------------------------------
 // 🏁 START THE BEST PORTAL
 // ------------------------------------------------------------------
+async function seedDefaultAdmin() {
+  try {
+    const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin_user@example.com';
+    const adminUsername = adminEmail;
+    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'AdminPassword123!';
+
+    const existingAdmin = await User.findOne({
+      where: {
+        [Op.or]: [{ email: adminEmail }, { username: adminUsername }]
+      }
+    });
+
+    if (!existingAdmin) {
+      const uid = 'usr_admin_default_2026';
+      const hashedPassword = hashPassword(adminPass);
+      await User.create({
+        uid,
+        username: adminUsername,
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: 'System',
+        lastName: 'Admin',
+        name: 'System Admin',
+        role: 'admin',
+        level: 'Staff'
+      });
+      logger.info(`🔑 Default admin account synchronized: ${adminEmail}`);
+    }
+  } catch (error) {
+    logger.error('Error seeding default admin account:', error);
+  }
+}
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
     await sequelize.sync({ alter: true });
     logger.info('🐘 Database synced successfully');
+    await seedDefaultAdmin();
   } catch (err) {
     logger.warn(`⚠️ Database sync bypassed: ${err.message}`);
   }

@@ -69,12 +69,17 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
           if (onLoginSuccess) {
             onLoginSuccess(userProfile);
           }
+          toast.success('Login successful');
+          if (userProfile.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
         } catch (e) {
           console.error('Failed to load user profile on login:', e);
+          toast.success('Login successful');
+          navigate('/');
         }
-
-        toast.success('Login successful');
-        navigate('/');
       } else {
         // Validation for Registration
         if (password !== confirmPassword) {
