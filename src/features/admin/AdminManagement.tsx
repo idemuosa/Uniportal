@@ -17,10 +17,20 @@ export default function AdminManagement() {
 
   const fetchData = async () => {
     try {
-      const response = await api.get('/admin/students');
-      setStudents(response.data);
+      const response = await api.get('/accounts/users/?role=student');
+      const rawData = response.data;
+      const dataList = Array.isArray(rawData) ? rawData : (rawData?.results || []);
+      setStudents(dataList.map((u: any) => ({
+        uid: (u.id || u.uid || '').toString(),
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+        email: u.email,
+        department: u.department,
+        level: u.level,
+        Application: u.Application || { status: 'approved' },
+        Payments: u.Payments || []
+      })));
     } catch (error) {
-      toast.error('Failed to load student data');
+      console.warn('Failed to load student data:', error);
     } finally {
       setLoading(false);
     }
@@ -28,7 +38,7 @@ export default function AdminManagement() {
 
   const updateStatus = async (uid: string, status: string) => {
     try {
-      await api.post(`/admin/students/status`, { uid, status });
+      await api.patch(`/accounts/users/${uid}/`, { status });
       toast.success(`Student status updated to ${status}`);
       fetchData();
     } catch (error) {

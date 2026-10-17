@@ -63,7 +63,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [appsRes, studentsRes, coursesRes, loansRes, treasuryRes, bankRes] = await Promise.all([
+        const [appsRes, studentsRes, coursesRes, loansRes, treasuryRes, bankRes] = await Promise.allSettled([
           api.get('/academics/applications/'),
           api.get('/accounts/users/?role=student'),
           api.get('/academics/courses/'),
@@ -72,33 +72,47 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
           api.get('/portal/bank-details/')
         ]);
 
-        setApplications(appsRes.data);
-        fetchExamSubmissions();
-        setStudents(studentsRes.data.map((u: any) => ({
-          uid: u.id.toString(),
+        const extractArray = (res: any) => {
+          if (!res || res.status !== 'fulfilled' || !res.value) return [];
+          const data = res.value.data;
+          if (Array.isArray(data)) return data;
+          if (data && Array.isArray(data.results)) return data.results;
+          return [];
+        };
+
+        setApplications(extractArray(appsRes));
+        setStudents(extractArray(studentsRes).map((u: any) => ({
+          uid: (u.id || u.uid || '').toString(),
           email: u.email,
           role: u.role,
-          name: `${u.first_name} ${u.last_name}`.trim(),
+          name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
           university: 'UniPortal',
           ...u
         })));
-        setCourses(coursesRes.data);
-        setLoans(loansRes.data);
-        
-        if (treasuryRes.data.length > 0) {
-          const t = treasuryRes.data[0];
-          setMaxLoanAmount(t.max_loan_amount);
-          setAcceptanceFee(t.acceptance_fee);
-          setEarlyPaymentDiscount(t.early_payment_discount);
+        setCourses(extractArray(coursesRes));
+        setLoans(extractArray(loansRes));
+
+        if (treasuryRes?.status === 'fulfilled' && treasuryRes.value.data) {
+          const t = Array.isArray(treasuryRes.value.data) ? treasuryRes.value.data[0] : (treasuryRes.value.data.results ? treasuryRes.value.data.results[0] : treasuryRes.value.data);
+          if (t) {
+            if (t.max_loan_amount) setMaxLoanAmount(t.max_loan_amount);
+            if (t.acceptance_fee) setAcceptanceFee(t.acceptance_fee);
+            if (t.early_payment_discount) setEarlyPaymentDiscount(t.early_payment_discount);
+          }
         }
 
-        if (bankRes.data.length > 0) {
-          setBanks(bankRes.data.map((b: any) => ({
-            bankName: b.bank_name,
-            accountNumber: b.account_number,
-            accountName: b.account_name
-          })));
+        if (bankRes?.status === 'fulfilled') {
+          const bData = extractArray(bankRes);
+          if (bData.length > 0) {
+            setBanks(bData.map((b: any) => ({
+              bankName: b.bank_name || b.bankName,
+              accountNumber: b.account_number || b.accountNumber,
+              accountName: b.account_name || b.accountName
+            })));
+          }
         }
+
+        fetchExamSubmissions();
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {

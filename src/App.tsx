@@ -83,10 +83,10 @@ export default function App() {
       <Layout user={user}>
         <Routes>
           <Route path="/" element={<Home user={user} />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth" element={<Auth onLoginSuccess={setUser} />} />
 
           {/* 🔐 HIDDEN ADMIN ENTRY: Only accessible via the secret path */}
-          <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth />} />
+          <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth onLoginSuccess={setUser} />} />
 
           <Route path="/entrance-exam" element={<EntranceExamPortal user={user} />} />
           <Route path="/admission" element={user ? <AdmissionForm user={user} /> : <Navigate to="/auth" />} />

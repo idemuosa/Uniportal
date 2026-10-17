@@ -4,6 +4,11 @@ import api from '../../api/axios';
 import { toast } from 'sonner';
 import { Lock, Mail, ShieldCheck, Eye, EyeOff, ArrowRight, User, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { UserProfile } from '../../types';
+
+interface AdminAuthProps {
+  onLoginSuccess?: (user: UserProfile) => void;
+}
 
 const getPasswordStrength = (password: string) => {
   let strength = 0;
@@ -15,7 +20,7 @@ const getPasswordStrength = (password: string) => {
   return strength;
 };
 
-export default function AdminAuth() {
+export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
   const [name, setName] = useState('');
   const [secretCode, setSecretCode] = useState('');
   const [email, setEmail] = useState('');
@@ -84,6 +89,20 @@ export default function AdminAuth() {
         // Verify role
         const userResponse = await api.get('/accounts/user/');
         if (userResponse.data.role === 'admin') {
+          const djangoUser = userResponse.data;
+          const userProfile: UserProfile = {
+            uid: djangoUser.id.toString(),
+            email: djangoUser.email,
+            role: djangoUser.role,
+            name: `${djangoUser.first_name || ''} ${djangoUser.last_name || ''}`.trim() || djangoUser.username,
+            university: 'UniPortal',
+            photoUrl: '',
+            faculty: djangoUser.faculty,
+            department: djangoUser.department,
+          };
+          if (onLoginSuccess) {
+            onLoginSuccess(userProfile);
+          }
           toast.success('Welcome back, Admin');
           navigate('/admin');
         } else {
@@ -172,9 +191,9 @@ export default function AdminAuth() {
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                 <input
-                  type="email"
+                  type="text"
                   required
-                  placeholder="Admin Email Address"
+                  placeholder="Admin Username or Email"
                   className="w-full bg-slate-50 border border-slate-200 p-3 pl-12 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
