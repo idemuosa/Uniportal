@@ -5,7 +5,7 @@ const dbUrl = process.env.DATABASE_URL;
 
 let sequelize;
 
-if (dbUrl && (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql'))) {
+if (dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))) {
   const isLocal = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
   sequelize = new Sequelize(dbUrl, {
     dialect: 'postgres',
@@ -19,7 +19,7 @@ if (dbUrl && (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql'))) {
       }
     })
   });
-} else if (dbUrl && dbUrl.startsWith('sqlite')) {
+} else if (dbUrl && (dbUrl.startsWith('sqlite://') || dbUrl.startsWith('sqlite:'))) {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: dbUrl.replace(/^sqlite:\/\//, '').replace(/^sqlite:/, '') || './uniportal.sqlite',
@@ -28,7 +28,7 @@ if (dbUrl && (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql'))) {
 } else {
   sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: './uniportal.sqlite',
+    storage: process.env.SQLITE_PATH || './uniportal.sqlite',
     logging: false
   });
 }
