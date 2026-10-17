@@ -651,19 +651,46 @@ app.post(['/api/academics/entrance-exams/questions/', '/api/academics/entrance-e
   }
 });
 
-// 3. Start Entrance Exam Session by JAMB/CBT Reg Number
+// 3. Start Entrance Exam Session by JAMB/CBT Reg Number or Admission Registration Number
 app.post(['/api/academics/entrance-exams/start/', '/api/academics/entrance-exams/start'], async (req, res) => {
   try {
     const { registrationNumber, stream, subjects, faculty, department } = req.body;
     const regNo = (registrationNumber || '').trim();
 
     if (!regNo) {
-      return res.status(400).json({ error: 'JAMB / Direct Entry CBT Registration Number is required' });
+      return res.status(400).json({ error: 'JAMB / Direct Entry CBT / Admission Registration Number is required' });
     }
 
-    // Check if exam was already taken
+    let matchingApp = null;
+    const cleanAppId = regNo.replace(/^LUK-ADM-/, '');
+    try {
+      const apps = await Application.findAll();
+      matchingApp = apps.find(a =>
+        a.id === regNo ||
+        a.id === cleanAppId ||
+        `LUK-ADM-${a.id}` === regNo ||
+        a.uid === regNo ||
+        (a.formData && (a.formData.jambRegNo === regNo || a.formData.jamb_reg_no === regNo))
+      );
+    } catch (appErr) {
+      logger.warn('Application lookup in start exam warning:', appErr);
+    }
+
+    // Check if exam was already taken under regNo or matching application's identifiers
+    const searchRegs = [regNo];
+    if (matchingApp) {
+      searchRegs.push(matchingApp.id, `LUK-ADM-${matchingApp.id}`);
+      if (matchingApp.formData?.jambRegNo) searchRegs.push(matchingApp.formData.jambRegNo);
+      if (matchingApp.uid) searchRegs.push(matchingApp.uid);
+    }
+
     const existingSubmission = await EntranceExamSubmission.findOne({
-      where: { registrationNumber: regNo }
+      where: {
+        [Op.or]: [
+          { registrationNumber: { [Op.in]: searchRegs } },
+          ...(matchingApp?.uid ? [{ uid: matchingApp.uid }] : [])
+        ]
+      }
     });
 
     if (existingSubmission) {
@@ -674,15 +701,24 @@ app.post(['/api/academics/entrance-exams/start/', '/api/academics/entrance-exams
       });
     }
 
-    // Gather questions for enrolled subjects or Direct Entry
+    // Determine stream, faculty, department, and subjects from application if available
+    const activeStream = stream || (matchingApp?.formData?.type?.includes('Direct Entry') ? 'Direct Entry' : 'JAMB');
+    const activeFaculty = faculty || matchingApp?.faculty || matchingApp?.formData?.faculty || '';
+    const activeDepartment = department || matchingApp?.department || matchingApp?.formData?.department || '';
+
+    // Gather questions
     let assembledQuestions = [];
-    if (stream === 'Direct Entry') {
+    if (activeStream === 'Direct Entry') {
       const deDbQuestions = await EntranceExamQuestion.findAll({ where: { stream: 'Direct Entry' } });
       assembledQuestions = deDbQuestions.length > 0 ? deDbQuestions : DEFAULT_CBT_QUESTIONS['Direct Entry'];
     } else {
-      const activeSubjects = Array.isArray(subjects) && subjects.length > 0
+      let activeSubjects = Array.isArray(subjects) && subjects.length > 0
         ? subjects
-        : ['English Language', 'Mathematics', 'Physics', 'Chemistry'];
+        : (matchingApp?.formData?.jambSubjects?.map(s => s.subject).filter(Boolean) || []);
+
+      if (activeSubjects.length === 0) {
+        activeSubjects = ['English Language', 'Mathematics', 'Physics', 'Chemistry'];
+      }
 
       for (const sub of activeSubjects) {
         const subName = typeof sub === 'string' ? sub : (sub.subject || 'English Language');
@@ -698,14 +734,16 @@ app.post(['/api/academics/entrance-exams/start/', '/api/academics/entrance-exams
       subject: q.subject || 'General',
       question: q.question,
       options: q.options,
-      stream: q.stream || stream || 'JAMB'
+      stream: q.stream || activeStream || 'JAMB'
     }));
 
     res.json({
       alreadyTaken: false,
       registrationNumber: regNo,
-      stream: stream || 'JAMB',
-      durationMinutes: stream === 'Direct Entry' ? 45 : 60,
+      stream: activeStream,
+      faculty: activeFaculty,
+      department: activeDepartment,
+      durationMinutes: activeStream === 'Direct Entry' ? 45 : 60,
       questions: candidateQuestions
     });
   } catch (error) {
@@ -883,13 +921,44 @@ app.post(['/api/academics/entrance-exams/release/:id/', '/api/academics/entrance
 app.get(['/api/academics/entrance-exams/my-result/', '/api/academics/entrance-exams/my-result'], async (req, res) => {
   try {
     const { regNo, uid } = req.query;
-    let where = {};
+    if (!regNo && !uid) {
+      return res.status(400).json({ error: 'Registration number or User ID required' });
+    }
+
+    const searchRegs = [];
     if (regNo) {
-      where.registrationNumber = regNo.trim();
+      const clean = regNo.trim();
+      searchRegs.push(clean);
+      const cleanAppId = clean.replace(/^LUK-ADM-/, '');
+      searchRegs.push(cleanAppId, `LUK-ADM-${cleanAppId}`);
+
+      try {
+        const apps = await Application.findAll();
+        const matchingApp = apps.find(a =>
+          a.id === clean ||
+          a.id === cleanAppId ||
+          `LUK-ADM-${a.id}` === clean ||
+          a.uid === clean ||
+          (a.formData && (a.formData.jambRegNo === clean || a.formData.jamb_reg_no === clean))
+        );
+        if (matchingApp) {
+          searchRegs.push(matchingApp.id, `LUK-ADM-${matchingApp.id}`);
+          if (matchingApp.formData?.jambRegNo) searchRegs.push(matchingApp.formData.jambRegNo);
+          if (matchingApp.uid) searchRegs.push(matchingApp.uid);
+        }
+      } catch (appErr) {
+        logger.warn('Application lookup in my-result warning:', appErr);
+      }
+    }
+
+    const where = {};
+    if (searchRegs.length > 0) {
+      where[Op.or] = [
+        { registrationNumber: { [Op.in]: searchRegs } },
+        ...(uid ? [{ uid }] : [])
+      ];
     } else if (uid) {
       where.uid = uid;
-    } else {
-      return res.status(400).json({ error: 'Registration number or User ID required' });
     }
 
     const submission = await EntranceExamSubmission.findOne({ where });
