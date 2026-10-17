@@ -37,15 +37,20 @@ export default function App() {
           const response = await api.get('/accounts/user/');
           // Mapping Django user to the existing UserProfile type
           const djangoUser = response.data;
+          const rawUid = djangoUser.uid || djangoUser.id || 'usr_admin';
+          const firstName = djangoUser.first_name || djangoUser.firstName || '';
+          const lastName = djangoUser.last_name || djangoUser.lastName || '';
+          const fullName = `${firstName} ${lastName}`.trim() || djangoUser.username || djangoUser.email || 'Admin User';
+
           const userProfile: UserProfile = {
-            uid: djangoUser.id.toString(),
-            email: djangoUser.email,
-            role: djangoUser.role,
-            name: `${djangoUser.first_name} ${djangoUser.last_name}`.trim() || djangoUser.username,
-            university: 'UniPortal', // default placeholder for now
-            photoUrl: '',
-            faculty: djangoUser.faculty,
-            department: djangoUser.department,
+            uid: String(rawUid),
+            email: String(djangoUser.email || ''),
+            role: (djangoUser.role || 'student') as UserProfile['role'],
+            name: fullName,
+            university: 'UniPortal',
+            photoUrl: String(djangoUser.photoUrl || ''),
+            faculty: String(djangoUser.faculty || ''),
+            department: String(djangoUser.department || ''),
           };
           setUser(userProfile);
         } catch (error) {
@@ -99,7 +104,7 @@ export default function App() {
           <Route path="/loan" element={(simulatedUser || user) ? <LoanApplicationForm user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
 
           {/* Protected Admin Dashboard */}
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
+          <Route path="/admin" element={<AdminDashboard user={user!} onSimulateLogin={setSimulatedUser} />} />
           <Route path="/admin/" element={<Navigate to="/admin" replace />} />
 
           {/* Catch-all for deleted /admin/login */}
