@@ -85,7 +85,7 @@ export default function AdminAuth() {
         const userResponse = await api.get('/accounts/user/');
         if (userResponse.data.role === 'admin') {
           toast.success('Welcome back, Admin');
-          window.location.href = '/admin';
+          navigate('/admin');
         } else {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
