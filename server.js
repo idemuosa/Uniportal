@@ -583,6 +583,11 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
+// 🔐 Admin Direct URL Redirection (e.g., uniportal/admin -> /#/admin)
+app.get(['/admin', '/admin/'], (req, res) => {
+  res.redirect('/#/admin');
+});
+
 // 🌐 SPA Fallback Routing for Client-Side Navigation
 app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'dist', 'index.html');
