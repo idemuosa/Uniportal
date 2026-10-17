@@ -20,7 +20,8 @@
     "cap:open:ios": "npx cap open ios",
     "build:all": "vite build && electron-builder && npx cap sync",
     "server": "node server.js",
-    "start:ws": "node websocket_server.js"
+    "start:ws": "node websocket_server.js",
+    "migrate:pg": "node scripts/migrate_sqlite_to_pg.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
