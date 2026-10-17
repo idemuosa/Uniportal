@@ -98,6 +98,7 @@ export default function App() {
 
           {/* Protected Admin Dashboard */}
           <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
+          <Route path="/admin/" element={<Navigate to="/admin" replace />} />
 
           {/* Catch-all for deleted /admin/login */}
           <Route path="/admin/login" element={<Navigate to="/" />} />
