@@ -86,17 +86,20 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
         return [];
       };
 
-      setApplications(extractArray(appsRes));
-      setStudents(extractArray(studentsRes).map((u: any) => ({
-        uid: (u.id || u.uid || '').toString(),
-        email: u.email,
-        role: u.role,
-        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+      setApplications(extractArray(appsRes).filter(Boolean));
+      setStudents(extractArray(studentsRes).filter(Boolean).map((u: any) => ({
+        uid: (u?.id || u?.uid || '').toString(),
+        email: u?.email || '',
+        role: u?.role || 'student',
+        name: `${u?.first_name || ''} ${u?.last_name || ''}`.trim() || u?.username || u?.email || 'Student',
         university: 'UniPortal',
+        faculty: u?.faculty || '',
+        department: u?.department || '',
+        level: u?.level || '100L',
         ...u
       })));
-      setCourses(extractArray(coursesRes));
-      setLoans(extractArray(loansRes));
+      setCourses(extractArray(coursesRes).filter(Boolean));
+      setLoans(extractArray(loansRes).filter(Boolean));
 
       if (treasuryRes?.status === 'fulfilled' && treasuryRes.value.data) {
         const t = Array.isArray(treasuryRes.value.data) ? treasuryRes.value.data[0] : (treasuryRes.value.data.results ? treasuryRes.value.data.results[0] : treasuryRes.value.data);
@@ -108,12 +111,12 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
       }
 
       if (bankRes?.status === 'fulfilled') {
-        const bData = extractArray(bankRes);
+        const bData = extractArray(bankRes).filter(Boolean);
         if (bData.length > 0) {
           setBanks(bData.map((b: any) => ({
-            bankName: b.bank_name || b.bankName,
-            accountNumber: b.account_number || b.accountNumber,
-            accountName: b.account_name || b.accountName
+            bankName: b?.bank_name || b?.bankName || 'Bank',
+            accountNumber: b?.account_number || b?.accountNumber || '',
+            accountName: b?.account_name || b?.accountName || ''
           })));
         }
       }
@@ -129,7 +132,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
   const fetchExamSubmissions = async () => {
     try {
       const res = await api.get('/academics/entrance-exams/submissions');
-      setExamSubmissions(res.data);
+      setExamSubmissions(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       console.warn('Exam submissions fetch warning:', e);
     }
@@ -362,10 +365,10 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
                 { icon: Users, label: 'Students', value: students.length },
-                { icon: FileText, label: 'Apps', value: applications.filter(a => a.status === 'pending').length },
+                { icon: FileText, label: 'Apps', value: applications.filter(a => a?.status === 'pending').length },
                 { icon: BookOpen, label: 'Courses', value: courses.length },
-                { icon: Landmark, label: 'Loans', value: loans.filter(l => l.status === 'pending').length },
-                { icon: DollarSign, label: 'Revenue', value: '₦' + loans.filter(l => l.status === 'approved').reduce((acc, l) => acc + (l.amount || 0), 0).toLocaleString() }
+                { icon: Landmark, label: 'Loans', value: loans.filter(l => l?.status === 'pending').length },
+                { icon: DollarSign, label: 'Revenue', value: '₦' + loans.filter(l => l?.status === 'approved').reduce((acc, l) => acc + (l?.amount || 0), 0).toLocaleString() }
               ].map(stat => (
                 <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:border-emerald-500/30 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
@@ -670,7 +673,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                                 </span>
                               </td>
                               <td className="p-4 text-xs font-mono text-slate-600 font-bold">
-                                {(student as any).matric_no || student.uid.slice(0, 10)}
+                                {(student as any).matric_no || (student.uid || '').slice(0, 10)}
                               </td>
                               <td className="p-4 text-right">
                                 <button
@@ -954,7 +957,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                                 <p className="text-[10px] text-slate-400 font-mono">{loan.uid}</p>
                               </td>
                               <td className="p-4 font-bold text-slate-900 text-sm">
-                                ₦{loan.amount.toLocaleString()}
+                                ₦{(loan.amount || 0).toLocaleString()}
                               </td>
                               <td className="p-4 text-xs text-slate-600 max-w-xs truncate">
                                 {loan.reason || 'Tuition Assistance'}
