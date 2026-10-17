@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { UserProfile, Course, Registration } from '../../types';
 import api from '../../api/axios';
 import { toast } from 'sonner';
-import { BookOpen, CheckCircle, Clock, Plus, Save, Info, AlertCircle, FileText, ArrowRight, ShieldCheck } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Plus, Save, Info, AlertCircle, FileText, ArrowRight, ShieldCheck, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
 
 interface CourseRegistrationProps {
   user: UserProfile;
@@ -15,6 +16,7 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,8 +98,39 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
   if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-[#008751] border-t-transparent rounded-full animate-spin" /></div>;
 
   if (registration) {
+    const registeredCourseList = registration.courses.map(code => {
+      const courseInfo = availableCourses.find(c => c.courseCode === code);
+      return courseInfo ? `${code} - ${courseInfo.title} (${courseInfo.units} CU)` : code;
+    });
+
+    const candidateData: CandidateData = {
+      candidateId: registration.id ? `LUK-REG-${registration.id}` : undefined,
+      name: user.name,
+      email: user.email,
+      role: 'Registered Student Candidate',
+      faculty: user.faculty,
+      department: user.department,
+      jambRegNo: user.jambRegNo,
+      jambScore: user.jambScore,
+      phoneNumber: user.phoneNumber,
+      address: user.permanentAddress,
+      stateOfOrigin: user.stateOfOrigin,
+      lga: user.lga,
+      city: user.locationCity,
+      gender: user.gender,
+      subjectsEnrolled: registeredCourseList,
+      status: registration.isApproved ? 'Senate Approved' : 'Pending Verification',
+      registrationDate: registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : undefined
+    };
+
     return (
       <div className="max-w-4xl mx-auto space-y-8 py-6">
+        {showSlipModal && (
+          <CandidateRegistrationSlip
+            candidate={candidateData}
+            onClose={() => setShowSlipModal(false)}
+          />
+        )}
         <div className="bg-white/40 p-12 rounded-xl shadow-2xl border border-[#008751]/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl opacity-50" />
           <div className="flex justify-between items-start mb-12 relative z-10">
@@ -132,9 +165,17 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
             ))}
           </div>
 
-          <div className="mt-12 p-8 bg-slate-50 rounded-xl border border-indigo-100/50 text-center">
-             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#008751] mb-3">Electronic Verification Slip</p>
+          <div className="mt-12 p-8 bg-slate-50 rounded-xl border border-indigo-100/50 text-center space-y-4">
+             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#008751]">Electronic Verification Slip</p>
              <p className="text-[10px] text-[#008751] leading-relaxed font-medium italic">This registration is digitally signed and serves as official proof of enrollment until senate approval.</p>
+             <div className="flex justify-center pt-2">
+               <button
+                 onClick={() => setShowSlipModal(true)}
+                 className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95"
+               >
+                 <Printer className="w-4 h-4" /> Print Course Registration Slip (PDF)
+               </button>
+             </div>
           </div>
         </div>
       </div>

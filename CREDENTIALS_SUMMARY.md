@@ -11,9 +11,9 @@ This file contains the essential access details for the School Portal administra
 - **Administrative Registry Key:** `LUKKE-ADMIN-26`
 - **Purpose:** Required when registering a new admin account via the frontend portal.
 
-## 👤 Superuser Account (Created via Terminal)
-- **Username/Email:** [Enter the email you used]
-- **Password:** [Enter the password you created here]
+## 👤 Default Admin Account
+- **Username / Email:** `admin_user@example.com`
+- **Password:** `AdminPassword123!`
 - **Role:** `admin`
 
 ## 🛠️ Maintenance Commands

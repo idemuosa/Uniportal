@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
+const defaultApiUrl = import.meta.env.VITE_API_URL || 'https://pharmacy-api-zyy0.onrender.com';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?
-    (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`) :
-    'http://localhost:8000/api',
+  baseURL: defaultApiUrl.endsWith('/api') ? defaultApiUrl : `${defaultApiUrl}/api`,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GraduationCap, BookOpen, FileCheck, Fingerprint, ShieldCheck, HardDrive } from 'lucide-react';
+import { GraduationCap, BookOpen, FileCheck, Fingerprint, ShieldCheck, HardDrive, Printer } from 'lucide-react';
 import axios from '../../api/axios';
 import CameraCapture from '../../components/CameraCapture';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
 
 export default function PostgradAdmissionForm() {
   const [step, setStep] = useState<'info' | 'selection' | 'biometrics' | 'documents'>('info');
@@ -10,6 +11,8 @@ export default function PostgradAdmissionForm() {
   const [selectedProgram, setSelectedProgram] = useState<any>(null);
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submittedCandidate, setSubmittedCandidate] = useState<CandidateData | null>(null);
+  const [showSlipModal, setShowSlipModal] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -48,15 +51,17 @@ export default function PostgradAdmissionForm() {
       return;
     }
 
-    // In a real app, you would upload this to your backend
-    console.log('Postgraduate Application:', {
-      ...formData,
-      program: selectedProgram.id,
-      biometrics: biometricBlobs
-    });
+    const candidateInfo: CandidateData = {
+      name: `${formData.first_name} ${formData.last_name}`.trim(),
+      email: formData.email,
+      role: 'Postgraduate Candidate',
+      programType: selectedProgram?.postgrad_details?.name || selectedProgram?.postgrad_details?.code || 'Postgraduate Program',
+      phoneNumber: formData.phone_number,
+      status: 'Submitted & Verified'
+    };
 
-    alert('Application submitted successfully!');
-    setStep('info');
+    setSubmittedCandidate(candidateInfo);
+    setShowSlipModal(true);
   };
 
   if (loading) {
@@ -71,6 +76,15 @@ export default function PostgradAdmissionForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-50 p-6">
+      {showSlipModal && submittedCandidate && (
+        <CandidateRegistrationSlip
+          candidate={submittedCandidate}
+          onClose={() => {
+            setShowSlipModal(false);
+            setStep('info');
+          }}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">

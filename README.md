@@ -40,10 +40,50 @@ docker-compose up --build
    - Add your `GOOGLE_AI_KEY` and `DATABASE_URL`.
    - Place `serviceAccountKey.json` in the root.
 
+### 🌐 Setting Environment Variables for Deployment
+
+#### 1. Backend Web Service (`server.js` / `websocket_server.js`)
+Set runtime environment variables on your hosting provider (Render, Railway, Heroku, AWS, DigitalOcean, etc.) or in `.env`:
+- `PORT`: Port for Express & Socket.io server (default: `5000`)
+- `WS_PORT`: Port for standalone WebSocket server (default: `8080`)
+- `CORS_ORIGIN`: Allowed origins (e.g. `https://yourdomain.com` or `*`)
+- `DATABASE_URL`: PostgreSQL connection string
+
+#### 2. Frontend Static Files (Vite / React)
+Vite environment variables prefixed with `VITE_` are embedded into the client bundle **at build time**:
+- `VITE_API_URL`: Backend API base URL (e.g. `https://api.yourdomain.com`)
+- `VITE_SOCKET_URL`: Socket.io server URL (e.g. `https://api.yourdomain.com`)
+
+*Build static assets with env variables:*
+```bash
+VITE_API_URL=https://api.yourdomain.com VITE_SOCKET_URL=https://api.yourdomain.com npm run build
+```
+
 3. **Launch Everything:**
    ```bash
    npm run dev:all
    ```
+
+## 🌐 Deploying to Render & Migrating Database
+
+This repository includes a `render.yaml` blueprint for automatic provisioning of the `uniportal` web service and `uniportal-db` PostgreSQL database on Render.
+
+### 🐘 Migrating `uniportal.sqlite` to Render PostgreSQL DB
+
+To migrate existing local SQLite records (`uniportal.sqlite`) to your Render PostgreSQL database:
+
+1. Obtain your Render PostgreSQL Internal or External Connection String (e.g. `postgres://uniportal_user:password@dpg-xxx.render.com/uniportal`).
+2. Run the migration command:
+   ```bash
+   npm run migrate:pg -- --target-db-url="postgres://uniportal_user:password@host:5432/uniportal"
+   ```
+   *Or set `DATABASE_URL` in your environment before running `npm run migrate:pg`.*
+
+The script will synchronize schemas, copy records across all models (`Users`, `Payments`, `Attendances`, `Applications`, `EntranceExamQuestions`, `EntranceExamSubmissions`), convert data types safely, and output a migration verification summary.
+
+- **Root Directory:** `.` (the repository root)
+- **Dockerfile Path:** `Dockerfile` (or `./Dockerfile`)
+- **Docker Context:** `.`
 
 ---
 **Institutional Registry • Digital Confirmation • 2025**

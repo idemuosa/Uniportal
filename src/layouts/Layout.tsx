@@ -59,8 +59,7 @@ export default function Layout({ children, user }: LayoutProps) {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-2">
               <NavLink to="/" active={isActive('/')} icon={<Home className="w-4 h-4" />}>Home</NavLink>
-              <NavLink to="/postgrad" active={isActive('/postgrad')} icon={<GraduationCap className="w-4 h-4" />}>Postgrad</NavLink>
-              <NavLink to="/result-checker" active={isActive('/result-checker')} icon={<FileText className="w-4 h-4" />}>Result Checker</NavLink>
+              <NavLink to="/entrance-exam" active={isActive('/entrance-exam')} icon={<GraduationCap className="w-4 h-4" />}>Entrance Exam</NavLink>
               {user && (
                 <>
                   <NavLink to="/admission" active={isActive('/admission')} icon={<FileText className="w-4 h-4" />}>Registry</NavLink>
@@ -122,8 +121,7 @@ export default function Layout({ children, user }: LayoutProps) {
         <div className={`lg:hidden transition-all duration-300 ease-in-out border-b border-[#008751]/10 bg-white/95 backdrop-blur-xl overflow-hidden ${isMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="px-4 py-3 space-y-2">
             <MobileNavLink to="/" active={isActive('/')} onClick={() => setIsMenuOpen(false)}>Home</MobileNavLink>
-            <MobileNavLink to="/postgrad" active={isActive('/postgrad')} onClick={() => setIsMenuOpen(false)}>Postgrad</MobileNavLink>
-            <MobileNavLink to="/result-checker" active={isActive('/result-checker')} onClick={() => setIsMenuOpen(false)}>Result Checker</MobileNavLink>
+            <MobileNavLink to="/entrance-exam" active={isActive('/entrance-exam')} onClick={() => setIsMenuOpen(false)}>Entrance Exam</MobileNavLink>
             {user && (
               <>
                 <MobileNavLink to="/admission" active={isActive('/admission')} onClick={() => setIsMenuOpen(false)}>Registry</MobileNavLink>

@@ -17,10 +17,20 @@ export default function AdminManagement() {
 
   const fetchData = async () => {
     try {
-      const response = await api.get('/admin/students');
-      setStudents(response.data);
+      const response = await api.get('/accounts/users/?role=student');
+      const rawData = response.data;
+      const dataList = Array.isArray(rawData) ? rawData : (rawData?.results || []);
+      setStudents(dataList.filter(Boolean).map((u: any) => ({
+        uid: (u.id || u.uid || '').toString(),
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || u.email || 'Student',
+        email: u.email || '',
+        department: u.department || '',
+        level: u.level || '',
+        Application: u.Application || { status: 'approved' },
+        Payments: Array.isArray(u.Payments) ? u.Payments : []
+      })));
     } catch (error) {
-      toast.error('Failed to load student data');
+      console.warn('Failed to load student data:', error);
     } finally {
       setLoading(false);
     }
@@ -28,7 +38,7 @@ export default function AdminManagement() {
 
   const updateStatus = async (uid: string, status: string) => {
     try {
-      await api.post(`/admin/students/status`, { uid, status });
+      await api.patch(`/accounts/users/${uid}/`, { status });
       toast.success(`Student status updated to ${status}`);
       fetchData();
     } catch (error) {
@@ -37,8 +47,8 @@ export default function AdminManagement() {
   };
 
   const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -48,7 +58,7 @@ export default function AdminManagement() {
         {[
           { label: 'Total Students', value: students.length, icon: <Users className="w-4 h-4" />, color: 'emerald' },
           { label: 'Pending Admissions', value: students.filter(s => s.Application?.status === 'pending').length, icon: <Clock className="w-4 h-4" />, color: 'amber' },
-          { label: 'Total Revenue', value: '₦' + students.reduce((acc, s) => acc + (s.Payments?.reduce((pAcc: any, p: any) => pAcc + Number(p.amount), 0) || 0), 0).toLocaleString(), icon: <Wallet className="w-4 h-4" />, color: 'blue' },
+          { label: 'Total Revenue', value: '₦' + students.reduce((acc, s) => acc + ((Array.isArray(s.Payments) ? s.Payments : []).reduce((pAcc: number, p: any) => pAcc + Number(p?.amount || 0), 0) || 0), 0).toLocaleString(), icon: <Wallet className="w-4 h-4" />, color: 'blue' },
           { label: 'Verified Staff', value: '12', icon: <ShieldCheck className="w-4 h-4" />, color: 'slate' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
@@ -95,6 +105,8 @@ export default function AdminManagement() {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr><td colSpan={5} className="p-20 text-center"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
+              ) : filteredStudents.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-xs text-slate-400 font-bold uppercase">No students found</td></tr>
               ) : filteredStudents.map((student) => (
                 <tr key={student.uid} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-8 py-5">
@@ -113,7 +125,7 @@ export default function AdminManagement() {
                     <p className="text-[10px] text-slate-400">{student.level || '---'}</p>
                   </td>
                   <td className="px-8 py-5">
-                    {student.Payments?.length > 0 ? (
+                    {Array.isArray(student.Payments) && student.Payments.length > 0 ? (
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 uppercase">Paid</span>
                     ) : (
                       <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100 uppercase">Default</span>

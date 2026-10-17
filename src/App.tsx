@@ -22,6 +22,7 @@ import PostgradPrograms from './features/academics/PostgradPrograms';
 import PostgradAdmissionForm from './features/academics/PostgradAdmissionForm';
 import LoanApplicationForm from './features/finances/LoanApplicationForm';
 import Auth from './features/auth/Auth';
+import EntranceExamPortal from './features/academics/EntranceExamPortal';
 import RemitaPayment from './features/finances/RemitaPayment';
 import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -82,32 +83,29 @@ export default function App() {
   const SECRET_ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || "lukke-core-admin-002";
 
   return (
-    <AuthProvider>
-      <Router>
-        <Toaster position="top-right" richColors />
-        <ErrorBoundary>
-          <Layout user={user}>
-            <Routes>
-              <Route path="/" element={<Home user={user} />} />
-              <Route path="/auth" element={<Auth />} />
+    <Router>
+      <Toaster position="top-right" richColors />
+      <Layout user={user}>
+        <Routes>
+          <Route path="/" element={<Home user={user} />} />
+          <Route path="/auth" element={<Auth onLoginSuccess={setUser} />} />
 
-              {/* 🔐 HIDDEN ADMIN ENTRY: Only accessible via the secret path */}
-              <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth />} />
+          {/* 🔐 HIDDEN ADMIN ENTRY: Only accessible via the secret path */}
+          <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth onLoginSuccess={setUser} />} />
 
-              <Route path="/admission" element={user ? <AdmissionForm user={user} /> : <Navigate to="/auth" />} />
-              <Route path="/portal" element={(simulatedUser || user)?.role === 'student' ? <StudentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/courses" element={(simulatedUser || user)?.role === 'student' ? <CourseRegistration user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/payments" element={(simulatedUser || user) ? <PaymentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/remita-payment" element={(simulatedUser || user) ? <RemitaPayment user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/hostels" element={(simulatedUser || user)?.role === 'student' ? <HostelAllocation user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/results" element={(simulatedUser || user)?.role === 'student' ? <Results user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
-              <Route path="/result-checker" element={<ResultChecker />} />
-              <Route path="/postgrad" element={<PostgradPrograms />} />
-              <Route path="/postgrad/apply" element={<PostgradAdmissionForm />} />
-              <Route path="/loan" element={(simulatedUser || user) ? <LoanApplicationForm user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/entrance-exam" element={<EntranceExamPortal user={user} />} />
+          <Route path="/admission" element={user ? <AdmissionForm user={user} /> : <Navigate to="/auth" />} />
+          <Route path="/portal" element={(simulatedUser || user)?.role === 'student' ? <StudentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/courses" element={(simulatedUser || user)?.role === 'student' ? <CourseRegistration user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/payments" element={(simulatedUser || user) ? <PaymentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/remita-payment" element={(simulatedUser || user) ? <RemitaPayment user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/hostels" element={(simulatedUser || user)?.role === 'student' ? <HostelAllocation user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/results" element={(simulatedUser || user)?.role === 'student' ? <Results user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
+          <Route path="/loan" element={(simulatedUser || user) ? <LoanApplicationForm user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
 
-              {/* Protected Admin Dashboard */}
-              <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
+          {/* Protected Admin Dashboard */}
+          <Route path="/admin" element={(simulatedUser || user)?.role === 'admin' ? <AdminDashboard user={(simulatedUser || user)!} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
+          <Route path="/admin/" element={<Navigate to="/admin" replace />} />
 
               {/* Catch-all for deleted /admin/login */}
               <Route path="/admin/login" element={<Navigate to="/" />} />

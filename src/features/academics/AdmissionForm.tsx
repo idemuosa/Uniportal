@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { UserProfile, AdmissionApplication } from '../../types';
 import api from '../../api/axios';
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FACULTIES, DEPARTMENTS } from '../../constants';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown, Printer, PlayCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CameraCapture from '../../components/CameraCapture';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
 
 interface AdmissionFormProps {
   user: UserProfile;
@@ -23,6 +25,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [application, setApplication] = useState<AdmissionApplication | null>(null);
+  const [showSlipModal, setShowSlipModal] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -88,11 +91,20 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
     setSubmitting(true);
     try {
-      // Keep Firebase for uploads for now as backend might not support binary yet
+      // Safely attempt upload to Firebase, fallback to Data URL if storage is unavailable
       const uploadBiometric = async (blob: Blob, path: string) => {
-        const fileRef = ref(storage, `applications/${user.uid}/${path}.jpg`);
-        await uploadBytes(fileRef, blob);
-        return getDownloadURL(fileRef);
+        try {
+          const fileRef = ref(storage, `applications/${user.uid}/${path}.jpg`);
+          await uploadBytes(fileRef, blob);
+          return await getDownloadURL(fileRef);
+        } catch (storageErr) {
+          console.warn(`Firebase Storage upload failed for ${path}, using Data URL fallback:`, storageErr);
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
       };
 
       const [faceUrl, leftIndexFingerUrl, rightIndexFingerUrl] = await Promise.all([
@@ -101,15 +113,24 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         uploadBiometric(biometricBlobs.rightIndex, 'right_index'),
       ]);
 
-      // Resolve Faculty/Department IDs
-      const portalRes = await api.get('/portal/faculties/');
-      const faculty = portalRes.data.find((f: any) => f.name === formData.faculty);
-      const department = faculty?.departments?.find((d: any) => d.name === formData.department);
+      // Resolve Faculty/Department IDs safely
+      let facultyId: any = undefined;
+      let departmentId: any = undefined;
+      try {
+        const portalRes = await api.get('/portal/faculties/');
+        const faculties = Array.isArray(portalRes.data) ? portalRes.data : (portalRes.data?.results || []);
+        const faculty = faculties.find((f: any) => f.name === formData.faculty);
+        facultyId = faculty?.id;
+        departmentId = faculty?.departments?.find((d: any) => d.name === formData.department)?.id;
+      } catch (fErr) {
+        console.warn('Faculty list retrieval warning:', fErr);
+      }
 
       const payload = {
-        type: formData.type,
-        faculty: faculty?.id,
-        department: department?.id,
+        type: formData.type || 'Undergraduate Full-Time',
+        faculty: facultyId,
+        department: formData.department || departmentId,
+        departmentName: formData.department,
         gender: formData.gender,
         date_of_birth: formData.dateOfBirth,
         phone_number: formData.phoneNumber,
@@ -127,14 +148,14 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
         status: 'pending',
       };
 
-      await api.post('/academics/applications/', payload);
+      const res = await api.post('/academics/applications/', payload);
 
       // 🔔 Dispatch Institutional Notification
       try {
         await api.post('/notify', {
           to: user.email,
           subject: 'Admission Application Received',
-          body: `Dear ${user.name}, your application for <b>${formData.type}</b> in the department of <b>${formData.department}</b> has been received and is under review.`,
+          body: `Dear ${user.name}, your application for <b>${formData.type || 'Undergraduate Full-Time'}</b> in the department of <b>${formData.department}</b> has been received and is under review.`,
           type: 'success',
           userId: user.uid
         });
@@ -143,9 +164,11 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
       }
 
       toast.success('Professional Application Submitted');
-      window.location.reload();
+      if (res.data) {
+        setApplication(res.data);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Submission error:', err);
       toast.error('Submission failed. Check network.');
     } finally {
       setSubmitting(false);
@@ -155,15 +178,47 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-[#008751] border-t-transparent rounded-full animate-spin" /></div>;
 
   if (application) {
+    const jambSubList = application.jambSubjects?.map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`) ||
+      formData.jambSubjects?.filter(s => s.subject).map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`);
+
+    const candidateData: CandidateData = {
+      candidateId: application.id
+        ? (application.id.startsWith('LUK-ADM-') ? application.id : `LUK-ADM-${application.id}`)
+        : undefined,
+      name: user.name,
+      email: user.email,
+      role: 'Admission Candidate',
+      programType: application.type || formData.type,
+      faculty: user.faculty || formData.faculty,
+      department: user.department || formData.department,
+      jambRegNo: application.jambRegNo || formData.jambRegNo || user.jambRegNo,
+      jambScore: application.jambScore || formData.jambScore || user.jambScore,
+      phoneNumber: application.phoneNumber || formData.phoneNumber || user.phoneNumber,
+      address: application.permanentAddress || formData.permanentAddress || user.permanentAddress,
+      stateOfOrigin: application.stateOfOrigin || formData.stateOfOrigin || user.stateOfOrigin,
+      lga: application.lga || formData.lga || user.lga,
+      city: application.locationCity || formData.locationCity || user.locationCity,
+      gender: application.gender || formData.gender || user.gender,
+      subjectsEnrolled: jambSubList && jambSubList.length > 0 ? jambSubList : undefined,
+      status: `Application ${application.status.toUpperCase()}`,
+      registrationDate: application.createdAt ? new Date(application.createdAt).toLocaleDateString() : undefined
+    };
+
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500">
+        {showSlipModal && (
+          <CandidateRegistrationSlip
+            candidate={candidateData}
+            onClose={() => setShowSlipModal(false)}
+          />
+        )}
         <div className="bg-slate-50 p-12 rounded-xl border border-[#008751]/10 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-8000/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-125 transition-transform duration-1000" />
           <div className="relative z-10 text-center space-y-6">
             <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
                <CheckCircle className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-black text-[#008751] tracking-tighter uppercase">Application</h2>
+            <h2 className="text-3xl font-black text-[#008751] tracking-tighter uppercase">Application Submitted</h2>
             <div className="flex items-center justify-center gap-4">
               <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
                 application.status === 'pending' ? 'bg-amber-100 text-amber-600 border border-amber-200' :
@@ -175,6 +230,21 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
             <p className="text-[#008751]/40 text-xs font-medium max-w-sm mx-auto leading-relaxed italic">
               Your application is currently being analyzed by the Central Admission Committee. Credentials and biometrics are under verification.
             </p>
+
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => setShowSlipModal(true)}
+                className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95"
+              >
+                <Printer className="w-5 h-5" /> Print Application Slip (PDF)
+              </button>
+              <Link
+                to={`/entrance-exam?regNo=${encodeURIComponent(candidateData.jambRegNo || candidateData.candidateId || '')}`}
+                className="bg-emerald-800 hover:bg-emerald-900 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95 border border-emerald-400/30"
+              >
+                <PlayCircle className="w-5 h-5 text-emerald-300" /> Enter Examination Player (CBT)
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -192,10 +262,40 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
-      {/* PROGRESS TRACKER */}
-      <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-[#008751]/10">
+      {/* MOBILE PROGRESS TRACKER (DROPDOWN) */}
+      <div className="md:hidden bg-slate-50 p-4 rounded-xl border border-[#008751]/10 flex flex-col gap-2">
+        <label htmlFor="step-select" className="text-[10px] font-black text-[#008751]/60 uppercase tracking-widest flex items-center justify-between">
+          <span>Application Step</span>
+          <span className="text-[#008751]">Step {stepItems.findIndex(s => s.id === step) + 1} of {stepItems.length}</span>
+        </label>
+        <div className="relative flex items-center">
+          <select
+            id="step-select"
+            value={step}
+            onChange={(e) => setStep(e.target.value as Step)}
+            className="w-full bg-white border border-[#008751]/20 rounded-xl p-3 pr-10 text-xs font-black text-[#008751] uppercase tracking-wider appearance-none focus:outline-none focus:ring-2 focus:ring-[#008751]"
+          >
+            {stepItems.map((s, i) => (
+              <option key={s.id} value={s.id}>
+                {i + 1}. {s.label}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 text-[#008751]">
+            <ChevronDown className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP PROGRESS TRACKER */}
+      <div className="hidden md:flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-[#008751]/10">
         {stepItems.map((s, i) => (
-          <div key={s.id} className="flex flex-col items-center gap-2 flex-1 relative">
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setStep(s.id as Step)}
+            className="flex flex-col items-center gap-2 flex-1 relative cursor-pointer"
+          >
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 z-10 ${
               step === s.id ? 'bg-[#008751] text-white scale-110 shadow-lg' :
               stepItems.findIndex(x => x.id === step) > i ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-300'
@@ -205,7 +305,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
             <span className={`text-[11px] font-black uppercase tracking-tighter ${step === s.id ? 'text-[#008751] opacity-100' : 'text-[#008751]/40 opacity-40'}`}>
               {s.label}
             </span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -339,7 +439,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <input placeholder="JAMB Registration Number" value={formData.jambRegNo} onChange={e => setFormData({...formData, jambRegNo: e.target.value})} className="w-full bg-slate-50 border-2 border-[#008751]/10 p-4 rounded-2xl font-black text-xs" />
-                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
+                 <input placeholder="Total Aggregate Score" type="number" value={formData.jambScore || ''} onChange={e => setFormData({...formData, jambScore: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-indigo-100 p-4 rounded-2xl font-black text-xs text-[#008751]" />
                </div>
 
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -350,7 +450,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                          next[idx].subject = e.target.value;
                          setFormData({...formData, jambSubjects: next});
                        }} className="w-full bg-slate-50 border border-[#008751]/10 p-3 rounded-xl text-[10px] font-bold" />
-                       <input placeholder="Score" type="number" value={js.score} onChange={e => {
+                       <input placeholder="Score" type="number" value={js.score || ''} onChange={e => {
                          const next = [...formData.jambSubjects];
                          next[idx].score = Number(e.target.value);
                          setFormData({...formData, jambSubjects: next});

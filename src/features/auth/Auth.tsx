@@ -4,7 +4,12 @@ import api from '../../api/axios';
 import { toast } from 'sonner';
 import { Mail, Lock, User, LogIn, UserPlus, Eye, EyeOff, AlertCircle, ArrowRight, GraduationCap, Building2, Bell, BookOpen, Fingerprint, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UniversityName } from '../../types';
+import { UniversityName, UserProfile } from '../../types';
+import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
+
+interface AuthProps {
+  onLoginSuccess?: (user: UserProfile) => void;
+}
 
 const getPasswordStrength = (password: string) => {
   let strength = 0;
@@ -16,7 +21,7 @@ const getPasswordStrength = (password: string) => {
   return strength;
 };
 
-export default function Auth() {
+export default function Auth({ onLoginSuccess }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +32,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
+  const [registeredCandidate, setRegisteredCandidate] = useState<CandidateData | null>(null);
   const navigate = useNavigate();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -46,8 +53,33 @@ export default function Auth() {
         localStorage.setItem('access_token', response.data.access);
         localStorage.setItem('refresh_token', response.data.refresh);
         
-        toast.success('Login successful');
-        window.location.href = '/';
+        try {
+          const userResponse = await api.get('/accounts/user/');
+          const djangoUser = userResponse.data;
+          const userProfile: UserProfile = {
+            uid: djangoUser.id.toString(),
+            email: djangoUser.email,
+            role: djangoUser.role,
+            name: `${djangoUser.first_name || ''} ${djangoUser.last_name || ''}`.trim() || djangoUser.username,
+            university: 'UniPortal',
+            photoUrl: '',
+            faculty: djangoUser.faculty,
+            department: djangoUser.department,
+          };
+          if (onLoginSuccess) {
+            onLoginSuccess(userProfile);
+          }
+          toast.success('Login successful');
+          if (userProfile.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        } catch (e) {
+          console.error('Failed to load user profile on login:', e);
+          toast.success('Login successful');
+          navigate('/');
+        }
       } else {
         // Validation for Registration
         if (password !== confirmPassword) {
@@ -75,8 +107,17 @@ export default function Auth() {
           role: 'applicant'
         });
 
-        toast.success('Registration successful! Please login to continue.');
-        setIsLogin(true);
+        const newCandidate: CandidateData = {
+          name: name || email,
+          email: email,
+          role: 'Applicant Candidate',
+          registrationDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          status: 'Registered Candidate'
+        };
+
+        setRegisteredCandidate(newCandidate);
+        setShowSlipModal(true);
+        toast.success('Candidate registration successful! You can now print your slip.');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -108,6 +149,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-[85vh] grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden rounded-2xl bg-white border border-[#008751]/10 shadow-[0_20px_80px_rgba(0,135,81,0.06)]">
+      {showSlipModal && registeredCandidate && (
+        <CandidateRegistrationSlip
+          candidate={registeredCandidate}
+          onClose={() => {
+            setShowSlipModal(false);
+            setIsLogin(true);
+          }}
+        />
+      )}
       
       {/* LEFT: AUTH FORM */}
       <div className="lg:col-span-12 xl:col-span-5 p-8 md:p-12 space-y-8 border-r border-[#008751]/8 flex flex-col justify-center bg-white">
