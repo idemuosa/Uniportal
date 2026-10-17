@@ -64,9 +64,22 @@ VITE_API_URL=https://api.yourdomain.com VITE_SOCKET_URL=https://api.yourdomain.c
    npm run dev:all
    ```
 
-## 🌐 Deploying to Render
+## 🌐 Deploying to Render & Migrating Database
 
-This repository includes a `render.yaml` blueprint for automatic configuration on Render.
+This repository includes a `render.yaml` blueprint for automatic provisioning of the `uniportal` web service and `uniportal-db` PostgreSQL database on Render.
+
+### 🐘 Migrating `uniportal.sqlite` to Render PostgreSQL DB
+
+To migrate existing local SQLite records (`uniportal.sqlite`) to your Render PostgreSQL database:
+
+1. Obtain your Render PostgreSQL Internal or External Connection String (e.g. `postgres://uniportal_user:password@dpg-xxx.render.com/uniportal`).
+2. Run the migration command:
+   ```bash
+   npm run migrate:pg -- --target-db-url="postgres://uniportal_user:password@host:5432/uniportal"
+   ```
+   *Or set `DATABASE_URL` in your environment before running `npm run migrate:pg`.*
+
+The script will synchronize schemas, copy records across all models (`Users`, `Payments`, `Attendances`, `Applications`, `EntranceExamQuestions`, `EntranceExamSubmissions`), convert data types safely, and output a migration verification summary.
 
 - **Root Directory:** `.` (the repository root)
 - **Dockerfile Path:** `Dockerfile` (or `./Dockerfile`)
