@@ -207,11 +207,31 @@ app.post(['/api/token/', '/api/token'], async (req, res) => {
 
   try {
     const term = username.toLowerCase().trim();
-    const user = await User.findOne({
+    const termPrefix = term.split('@')[0];
+
+    // Priority 1: Exact match on email or username (case-insensitive)
+    let user = await User.findOne({
       where: {
-        [Op.or]: [{ email: term }, { username: term }]
+        [Op.or]: [
+          { email: term },
+          { username: term },
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), term),
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('username')), term)
+        ]
       }
     });
+
+    // Priority 2: Fallback match on username prefix if exact match not found
+    if (!user) {
+      user = await User.findOne({
+        where: {
+          [Op.or]: [
+            { username: termPrefix },
+            sequelize.where(sequelize.fn('LOWER', sequelize.col('username')), termPrefix)
+          ]
+        }
+      });
+    }
 
     if (!user || !verifyPassword(password, user.password)) {
       return res.status(401).json({ detail: 'No active account found with the given credentials' });
@@ -1037,27 +1057,31 @@ async function seedDefaultAdmin() {
   try {
     const adminEmail = (process.env.ADMIN_EMAIL || process.env.DEFAULT_ADMIN_EMAIL || 'admin_user@example.com').toLowerCase().trim();
     const adminUsername = adminEmail;
+    const adminPrefix = adminEmail.split('@')[0];
     const adminPass = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD || 'AdminPassword123!';
+
+    const hashedPassword = hashPassword(adminPass);
 
     const existingAdmin = await User.findOne({
       where: {
         [Op.or]: [
           { email: adminEmail },
           { username: adminUsername },
+          { username: adminPrefix },
           { email: 'admin_user@example.com' },
-          { username: 'admin_user' },
-          { role: 'admin' }
+          { username: 'admin_user' }
         ]
       }
     });
-
-    const hashedPassword = hashPassword(adminPass);
 
     if (existingAdmin) {
       existingAdmin.email = adminEmail;
       existingAdmin.username = adminUsername;
       existingAdmin.password = hashedPassword;
       existingAdmin.role = 'admin';
+      existingAdmin.firstName = existingAdmin.firstName || 'System';
+      existingAdmin.lastName = existingAdmin.lastName || 'Admin';
+      existingAdmin.name = existingAdmin.name || 'System Admin';
       await existingAdmin.save();
       logger.info(`🔑 Default admin account updated & synchronized: ${adminEmail}`);
     } else {
@@ -1074,6 +1098,15 @@ async function seedDefaultAdmin() {
         level: 'Staff'
       });
       logger.info(`🔑 Default admin account created: ${adminEmail}`);
+    }
+
+    // Ensure all existing accounts with role 'admin' have non-empty password set
+    const adminUsers = await User.findAll({ where: { role: 'admin' } });
+    for (const adminUser of adminUsers) {
+      if (!adminUser.password) {
+        adminUser.password = hashedPassword;
+        await adminUser.save();
+      }
     }
   } catch (error) {
     logger.error('Error seeding default admin account:', error);
