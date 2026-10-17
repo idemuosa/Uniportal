@@ -207,9 +207,15 @@ app.post(['/api/token/', '/api/token'], async (req, res) => {
 
   try {
     const term = username.toLowerCase().trim();
+    const prefix = term.split('@')[0];
     const user = await User.findOne({
       where: {
-        [Op.or]: [{ email: term }, { username: term }]
+        [Op.or]: [
+          { email: term },
+          { username: term },
+          { username: prefix },
+          { email: `${prefix}@example.com` }
+        ]
       }
     });
 
@@ -1036,18 +1042,23 @@ app.get('*', (req, res) => {
 async function seedDefaultAdmin() {
   try {
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin_user@example.com';
-    const adminUsername = adminEmail;
+    const adminUsername = 'admin_user';
     const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'AdminPassword123!';
+    const hashedPassword = hashPassword(adminPass);
 
     const existingAdmin = await User.findOne({
       where: {
-        [Op.or]: [{ email: adminEmail }, { username: adminUsername }]
+        [Op.or]: [
+          { email: adminEmail },
+          { username: adminEmail },
+          { username: adminUsername },
+          { username: 'admin' }
+        ]
       }
     });
 
     if (!existingAdmin) {
       const uid = 'usr_admin_default_2026';
-      const hashedPassword = hashPassword(adminPass);
       await User.create({
         uid,
         username: adminUsername,
@@ -1060,6 +1071,12 @@ async function seedDefaultAdmin() {
         level: 'Staff'
       });
       logger.info(`🔑 Default admin account synchronized: ${adminEmail}`);
+    } else {
+      existingAdmin.password = hashedPassword;
+      existingAdmin.role = 'admin';
+      existingAdmin.email = adminEmail;
+      await existingAdmin.save();
+      logger.info(`🔑 Default admin account updated: ${adminEmail}`);
     }
   } catch (error) {
     logger.error('Error seeding default admin account:', error);
