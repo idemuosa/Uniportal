@@ -52,8 +52,15 @@ export default function RemitaPayment({ user }: RemitaPaymentProps) {
     fetchTreasury();
   }, []);
 
+  useEffect(() => {
+    if (!amount) {
+      const timer = setTimeout(() => navigate('/payments'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [amount, navigate]);
+
   if (!amount) {
-    return <div className="p-20 text-center text-[#008751]">Invalid session. Redirecting...{setTimeout(() => navigate('/payments'), 2000)}</div>;
+    return <div className="p-20 text-center text-[#008751]">Invalid session. Redirecting...</div>;
   }
 
   const handleComplete = async () => {

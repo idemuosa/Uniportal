@@ -17,10 +17,15 @@ import CourseRegistration from './features/academics/CourseRegistration';
 import PaymentPortal from './features/finances/PaymentPortal';
 import HostelAllocation from './features/hostel/HostelAllocation';
 import Results from './features/academics/Results';
+import ResultChecker from './features/academics/ResultChecker';
+import PostgradPrograms from './features/academics/PostgradPrograms';
+import PostgradAdmissionForm from './features/academics/PostgradAdmissionForm';
 import LoanApplicationForm from './features/finances/LoanApplicationForm';
 import Auth from './features/auth/Auth';
 import EntranceExamPortal from './features/academics/EntranceExamPortal';
 import RemitaPayment from './features/finances/RemitaPayment';
+import { AuthProvider } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Toaster, toast } from 'sonner';
 import { ShieldCheck } from 'lucide-react';
 
@@ -102,11 +107,13 @@ export default function App() {
           <Route path="/admin" element={(simulatedUser || user)?.role === 'admin' ? <AdminDashboard user={(simulatedUser || user)!} onSimulateLogin={setSimulatedUser} /> : <Navigate to={`/${SECRET_ADMIN_PATH}`} />} />
           <Route path="/admin/" element={<Navigate to="/admin" replace />} />
 
-          {/* Catch-all for deleted /admin/login */}
-          <Route path="/admin/login" element={<Navigate to="/" />} />
-        </Routes>
-      </Layout>
-    </Router>
+              {/* Catch-all for deleted /admin/login */}
+              <Route path="/admin/login" element={<Navigate to="/" />} />
+            </Routes>
+          </Layout>
+        </ErrorBoundary>
+      </Router>
+    </AuthProvider>
   );
 }
 
