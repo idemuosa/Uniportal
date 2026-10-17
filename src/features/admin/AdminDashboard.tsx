@@ -5,7 +5,7 @@ import { FACULTIES, DEPARTMENTS, LEVELS, SCHOOL_FEES } from '../../constants';
 import { toast } from 'sonner';
 import { db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Users, FileText, BookOpen, Settings, CheckCircle, XCircle, Trash2, Plus, DollarSign, Building2, Landmark, Clock, ArrowRight, Camera, Eye, Fingerprint, ShieldCheck, Award, AlertCircle, LogIn } from 'lucide-react';
+import { Users, FileText, BookOpen, Settings, CheckCircle, XCircle, Trash2, Plus, DollarSign, Building2, Landmark, Clock, ArrowRight, Camera, Eye, Fingerprint, ShieldCheck, Award, AlertCircle, LogIn, Search, UserPlus, CreditCard, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import AdminManagement from './AdminManagement';
@@ -39,10 +39,14 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
 
+  // Search States
+  const [studentSearch, setStudentSearch] = useState('');
+  const [courseSearch, setCourseSearch] = useState('');
+
   // Form States
-  const [newCourse, setNewCourse] = useState({ courseCode: '', title: '', units: 3, faculty: '', department: '', level: '100L' });
-  const [newDept, setNewDept] = useState({ faculty: '', name: '' });
-  const [manualStudent, setManualStudent] = useState({ name: '', email: '', faculty: '', department: '', level: '100L', age: 18, locationCity: '' });
+  const [newCourse, setNewCourse] = useState({ courseCode: '', title: '', units: 3, faculty: FACULTIES[0] || '', department: '', level: '100L' });
+  const [newDept, setNewDept] = useState({ faculty: FACULTIES[0] || '', name: '' });
+  const [manualStudent, setManualStudent] = useState({ name: '', email: '', faculty: FACULTIES[0] || '', department: '', level: '100L', age: 18, locationCity: '' });
 
   // Treasury State
   const [bankSetup, setBankSetup] = useState({ bankName: '', accountNumber: '', accountName: '' });
@@ -56,72 +60,71 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
   const [maxLoanAmount, setMaxLoanAmount] = useState<number>(500000);
   const [acceptanceFee, setAcceptanceFee] = useState<number>(120000);
   const [earlyPaymentDiscount, setEarlyPaymentDiscount] = useState<number>(5);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryAmount, setNewCategoryAmount] = useState<number>(0);
+  const [savingTreasury, setSavingTreasury] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [appsRes, studentsRes, coursesRes, loansRes, treasuryRes, bankRes] = await Promise.allSettled([
-          api.get('/academics/applications/'),
-          api.get('/accounts/users/?role=student'),
-          api.get('/academics/courses/'),
-          api.get('/finances/loans/'),
-          api.get('/portal/treasury-settings/'),
-          api.get('/portal/bank-details/')
-        ]);
-
-        const extractArray = (res: any) => {
-          if (!res || res.status !== 'fulfilled' || !res.value) return [];
-          const data = res.value.data;
-          if (Array.isArray(data)) return data;
-          if (data && Array.isArray(data.results)) return data.results;
-          return [];
-        };
-
-        setApplications(extractArray(appsRes));
-        setStudents(extractArray(studentsRes).map((u: any) => ({
-          uid: (u.id || u.uid || '').toString(),
-          email: u.email,
-          role: u.role,
-          name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
-          university: 'UniPortal',
-          ...u
-        })));
-        setCourses(extractArray(coursesRes));
-        setLoans(extractArray(loansRes));
-
-        if (treasuryRes?.status === 'fulfilled' && treasuryRes.value.data) {
-          const t = Array.isArray(treasuryRes.value.data) ? treasuryRes.value.data[0] : (treasuryRes.value.data.results ? treasuryRes.value.data.results[0] : treasuryRes.value.data);
-          if (t) {
-            if (t.max_loan_amount) setMaxLoanAmount(t.max_loan_amount);
-            if (t.acceptance_fee) setAcceptanceFee(t.acceptance_fee);
-            if (t.early_payment_discount) setEarlyPaymentDiscount(t.early_payment_discount);
-          }
-        }
-
-        if (bankRes?.status === 'fulfilled') {
-          const bData = extractArray(bankRes);
-          if (bData.length > 0) {
-            setBanks(bData.map((b: any) => ({
-              bankName: b.bank_name || b.bankName,
-              accountNumber: b.account_number || b.accountNumber,
-              accountName: b.account_name || b.accountName
-            })));
-          }
-        }
-
-        fetchExamSubmissions();
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [appsRes, studentsRes, coursesRes, loansRes, treasuryRes, bankRes] = await Promise.allSettled([
+        api.get('/academics/applications/'),
+        api.get('/accounts/users/?role=student'),
+        api.get('/academics/courses/'),
+        api.get('/finances/loans/'),
+        api.get('/portal/treasury-settings/'),
+        api.get('/portal/bank-details/')
+      ]);
+
+      const extractArray = (res: any) => {
+        if (!res || res.status !== 'fulfilled' || !res.value) return [];
+        const data = res.value.data;
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.results)) return data.results;
+        return [];
+      };
+
+      setApplications(extractArray(appsRes));
+      setStudents(extractArray(studentsRes).map((u: any) => ({
+        uid: (u.id || u.uid || '').toString(),
+        email: u.email,
+        role: u.role,
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+        university: 'UniPortal',
+        ...u
+      })));
+      setCourses(extractArray(coursesRes));
+      setLoans(extractArray(loansRes));
+
+      if (treasuryRes?.status === 'fulfilled' && treasuryRes.value.data) {
+        const t = Array.isArray(treasuryRes.value.data) ? treasuryRes.value.data[0] : (treasuryRes.value.data.results ? treasuryRes.value.data.results[0] : treasuryRes.value.data);
+        if (t) {
+          if (t.max_loan_amount) setMaxLoanAmount(t.max_loan_amount);
+          if (t.acceptance_fee) setAcceptanceFee(t.acceptance_fee);
+          if (t.early_payment_discount) setEarlyPaymentDiscount(t.early_payment_discount);
+        }
+      }
+
+      if (bankRes?.status === 'fulfilled') {
+        const bData = extractArray(bankRes);
+        if (bData.length > 0) {
+          setBanks(bData.map((b: any) => ({
+            bankName: b.bank_name || b.bankName,
+            accountNumber: b.account_number || b.accountNumber,
+            accountName: b.account_name || b.accountName
+          })));
+        }
+      }
+
+      fetchExamSubmissions();
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchExamSubmissions = async () => {
     try {
@@ -175,14 +178,14 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
     }
   };
 
-  // [Handlers kept same as before for functionality]
   const handleApprove = async (app: AdmissionApplication) => {
     try {
       const matricNo = `UNI/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
       await api.patch(`/academics/applications/${app.id}/`, { status: 'approved' });
       await api.patch(`/accounts/users/${app.uid}/`, { role: 'student', matric_no: matricNo });
       toast.success('Application approved!');
-      window.location.reload(); 
+      fetchData();
+      setSelectedApp(null);
     } catch (error) { toast.error('Failed to approve application'); }
   };
 
@@ -199,16 +202,110 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
       await api.patch(`/academics/applications/${app.id!}/`, { status: 'rejected' });
       toast.success('Application rejected');
       setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'rejected' } : a));
+      setSelectedApp(null);
     } catch (error) { toast.error('Failed to reject application'); }
   };
 
   const handleAddCourse = async () => {
+    if (!newCourse.courseCode || !newCourse.title) {
+      toast.error('Please enter Course Code and Course Title');
+      return;
+    }
     try {
       await api.post('/academics/courses/', { ...newCourse, course_code: newCourse.courseCode });
       toast.success('Course added successfully');
+      setNewCourse({ courseCode: '', title: '', units: 3, faculty: FACULTIES[0] || '', department: '', level: '100L' });
       const res = await api.get('/academics/courses/');
-      setCourses(res.data);
+      setCourses(Array.isArray(res.data) ? res.data : (res.data?.results || []));
     } catch (error) { toast.error('Failed to add course'); }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      await api.delete(`/academics/courses/${courseId}/`);
+      toast.success('Course deleted');
+      setCourses(courses.filter(c => c.id !== courseId));
+    } catch (error) {
+      toast.error('Failed to delete course');
+    }
+  };
+
+  const handleAddBank = async () => {
+    if (!bankSetup.bankName || !bankSetup.accountNumber || !bankSetup.accountName) {
+      toast.error('Please fill in bank name, account number, and account name');
+      return;
+    }
+    try {
+      await api.post('/portal/bank-details/', {
+        bank_name: bankSetup.bankName,
+        account_number: bankSetup.accountNumber,
+        account_name: bankSetup.accountName
+      });
+      toast.success('Bank details saved successfully');
+      setBanks([...banks, { bankName: bankSetup.bankName, accountNumber: bankSetup.accountNumber, accountName: bankSetup.accountName }]);
+      setBankSetup({ bankName: '', accountNumber: '', accountName: '' });
+    } catch (error) {
+      toast.error('Failed to save bank details');
+    }
+  };
+
+  const handleUpdateTreasurySettings = async () => {
+    setSavingTreasury(true);
+    try {
+      await api.post('/portal/treasury-settings/', {
+        max_loan_amount: maxLoanAmount,
+        acceptance_fee: acceptanceFee,
+        early_payment_discount: earlyPaymentDiscount
+      });
+      toast.success('Treasury settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save treasury settings');
+    } finally {
+      setSavingTreasury(false);
+    }
+  };
+
+  const handleRecordManualPay = async () => {
+    if (!manualPay.uid || manualPay.amount <= 0) {
+      toast.error('Please provide student UID and valid payment amount');
+      return;
+    }
+    try {
+      await api.post('/finances/payments/manual/', manualPay);
+      toast.success(`Manual payment of ₦${manualPay.amount.toLocaleString()} recorded!`);
+      setManualPay({ uid: '', type: 'tuition', amount: 0 });
+    } catch (error) {
+      toast.error('Failed to record manual payment');
+    }
+  };
+
+  const handleAddDept = async () => {
+    if (!newDept.name || !newDept.faculty) {
+      toast.error('Please select faculty and specify department name');
+      return;
+    }
+    try {
+      await api.post('/academics/departments/', newDept);
+      toast.success(`Department "${newDept.name}" created under ${newDept.faculty}`);
+      setNewDept({ faculty: FACULTIES[0] || '', name: '' });
+    } catch (error) {
+      toast.error('Failed to create department');
+    }
+  };
+
+  const handleAddManualStudent = async () => {
+    if (!manualStudent.name || !manualStudent.email) {
+      toast.error('Please provide student name and email');
+      return;
+    }
+    try {
+      await api.post('/accounts/users/manual-student/', manualStudent);
+      toast.success(`Student ${manualStudent.name} created successfully`);
+      setManualStudent({ name: '', email: '', faculty: FACULTIES[0] || '', department: '', level: '100L', age: 18, locationCity: '' });
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to enroll student manually');
+    }
   };
 
   const startSimulation = (student: UserProfile) => {
@@ -218,6 +315,18 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
       toast.success(`Logged in as ${student.name}`);
     }
   };
+
+  const filteredStudents = students.filter(s =>
+    (s.name || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+    (s.email || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+    (s.department || '').toLowerCase().includes(studentSearch.toLowerCase())
+  );
+
+  const filteredCourses = courses.filter(c =>
+    (c.courseCode || c.course_code || '').toLowerCase().includes(courseSearch.toLowerCase()) ||
+    (c.title || '').toLowerCase().includes(courseSearch.toLowerCase()) ||
+    (c.department || '').toLowerCase().includes(courseSearch.toLowerCase())
+  );
 
   if (loading) return <div className="flex justify-center p-12 bg-white min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div></div>;
 
@@ -229,10 +338,10 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Control</h1>
-            <p className="text-slate-500 text-sm font-medium">UniPortal Administrative</p>
+            <p className="text-slate-500 text-sm font-medium">UniPortal Administrative Dashboard</p>
           </div>
 
-          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide">
+          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide max-w-full">
             {(['management', 'applications', 'exams', 'students', 'courses', 'treasury', 'loans', 'setup'] as const).map(tab => (
               <button
                 key={tab}
@@ -256,7 +365,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                 { icon: FileText, label: 'Apps', value: applications.filter(a => a.status === 'pending').length },
                 { icon: BookOpen, label: 'Courses', value: courses.length },
                 { icon: Landmark, label: 'Loans', value: loans.filter(l => l.status === 'pending').length },
-                { icon: DollarSign, label: 'Revenue', value: '₦0' }
+                { icon: DollarSign, label: 'Revenue', value: '₦' + loans.filter(l => l.status === 'approved').reduce((acc, l) => acc + (l.amount || 0), 0).toLocaleString() }
               ].map(stat => (
                 <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:border-emerald-500/30 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
@@ -272,9 +381,10 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
 
             {/* TAB CONTENT AREA */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+
+              {/* EXAMS TAB */}
               {activeTab === 'exams' && (
                 <div className="p-8 space-y-12">
-                  {/* SECTION 1: CANDIDATE EXAM SUBMISSIONS */}
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <div>
@@ -359,7 +469,6 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                     </div>
                   </div>
 
-                  {/* SECTION 2: CONFIGURE CBT QUESTIONS FOR DIRECT ENTRY & UTME */}
                   <div className="space-y-6 pt-6 border-t border-slate-100">
                     <div>
                       <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
@@ -463,60 +572,558 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                 </div>
               )}
 
+              {/* APPLICATIONS TAB */}
               {activeTab === 'applications' && (
                 <div className="p-8">
-                  <h3 className="text-lg font-bold mb-6 flex items-center gap-3"><FileText className="w-5 h-5 text-emerald-500" /> Pending Admissions</h3>
+                  <h3 className="text-lg font-bold mb-6 flex items-center gap-3"><FileText className="w-5 h-5 text-emerald-500" /> Pending Admission Applications</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="border-b border-slate-100">
-                          <th className="py-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Candidate</th>
-                          <th className="py-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Program</th>
-                          <th className="py-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Status</th>
-                          <th className="py-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                        <tr className="border-b border-slate-100 bg-slate-50/50">
+                          <th className="py-4 px-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Candidate</th>
+                          <th className="py-4 px-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Program</th>
+                          <th className="py-4 px-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Status</th>
+                          <th className="py-4 px-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {applications.map(app => (
-                          <tr key={app.id} className="hover:bg-slate-50 transition-all">
-                            <td className="py-4">
-                              <p className="font-bold text-slate-900">{app.name}</p>
-                              <p className="text-xs text-slate-500">{app.email || 'No Email'}</p>
-                            </td>
-                            <td className="py-4">
-                              <p className="text-xs font-bold text-slate-700">{app.faculty}</p>
-                              <p className="text-[10px] text-slate-500">{app.department}</p>
-                            </td>
-                            <td className="py-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${app.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {app.status}
-                              </span>
-                            </td>
-                            <td className="py-4 text-right">
-                              <button onClick={() => setSelectedApp(app)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"><Eye className="w-4 h-4" /></button>
-                            </td>
-                          </tr>
-                        ))}
+                        {applications.length === 0 ? (
+                          <tr><td colSpan={4} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No applications found</td></tr>
+                        ) : (
+                          applications.map(app => (
+                            <tr key={app.id} className="hover:bg-slate-50 transition-all">
+                              <td className="py-4 px-4">
+                                <p className="font-bold text-slate-900">{app.name}</p>
+                                <p className="text-xs text-slate-500">{app.email || 'No Email'}</p>
+                              </td>
+                              <td className="py-4 px-4">
+                                <p className="text-xs font-bold text-slate-700">{app.faculty}</p>
+                                <p className="text-[10px] text-slate-500">{app.department}</p>
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${app.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                  {app.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <button onClick={() => setSelectedApp(app)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"><Eye className="w-4 h-4" /></button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
               )}
 
-              {activeTab === 'setup' && (
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
-                   <div className="space-y-6">
-                      <h3 className="text-lg font-bold flex items-center gap-3 text-slate-900"><Plus className="w-5 h-5 text-emerald-500" /> Provision Course</h3>
-                      <div className="space-y-4">
-                        <input placeholder="Course Code" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 ring-emerald-500/10" value={newCourse.courseCode} onChange={e => setNewCourse({...newCourse, courseCode: e.target.value})} />
-                        <input placeholder="Course Title" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 ring-emerald-500/10" value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} />
-                        <button onClick={handleAddCourse} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/10">Register Course</button>
-                      </div>
-                   </div>
+              {/* STUDENTS TAB */}
+              {activeTab === 'students' && (
+                <div className="p-8 space-y-6">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Users className="w-5 h-5 text-emerald-500" /> Student Directory
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">Enrolled students across faculties and levels</p>
+                    </div>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search student or department..."
+                        value={studentSearch}
+                        onChange={e => setStudentSearch(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-medium focus:outline-none focus:ring-2 ring-emerald-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Student Name & Email</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Faculty & Department</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Level</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Matric / ID</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Simulate Session</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredStudents.length === 0 ? (
+                          <tr><td colSpan={5} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No students found</td></tr>
+                        ) : (
+                          filteredStudents.map(student => (
+                            <tr key={student.uid} className="hover:bg-slate-50/80 transition-all">
+                              <td className="p-4">
+                                <p className="font-bold text-slate-900">{student.name}</p>
+                                <p className="text-xs text-slate-400 font-mono">{student.email}</p>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-xs font-bold text-slate-700">{student.faculty || 'Unassigned'}</p>
+                                <p className="text-[10px] text-slate-500">{student.department || '---'}</p>
+                              </td>
+                              <td className="p-4">
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold">
+                                  {student.level || '100L'}
+                                </span>
+                              </td>
+                              <td className="p-4 text-xs font-mono text-slate-600 font-bold">
+                                {(student as any).matric_no || student.uid.slice(0, 10)}
+                              </td>
+                              <td className="p-4 text-right">
+                                <button
+                                  onClick={() => startSimulation(student)}
+                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-1.5 ml-auto transition-all"
+                                >
+                                  <LogIn className="w-3.5 h-3.5" /> Simulate Login
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
-              {/* Other tabs can be similarly simplified... */}
+              {/* COURSES TAB */}
+              {activeTab === 'courses' && (
+                <div className="p-8 space-y-6">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <BookOpen className="w-5 h-5 text-emerald-500" /> Academic Course Directory
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">Manage accredited course offerings and units</p>
+                    </div>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search code, title, or department..."
+                        value={courseSearch}
+                        onChange={e => setCourseSearch(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-medium focus:outline-none focus:ring-2 ring-emerald-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Course Code</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Title</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Units</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Faculty & Dept</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Level</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredCourses.length === 0 ? (
+                          <tr><td colSpan={6} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No courses found</td></tr>
+                        ) : (
+                          filteredCourses.map(course => (
+                            <tr key={course.id || course.courseCode} className="hover:bg-slate-50/80 transition-all">
+                              <td className="p-4 font-mono font-bold text-emerald-600 text-xs">
+                                {course.courseCode || course.course_code}
+                              </td>
+                              <td className="p-4 font-bold text-slate-900 text-xs">
+                                {course.title}
+                              </td>
+                              <td className="p-4">
+                                <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold">
+                                  {course.units} Units
+                                </span>
+                              </td>
+                              <td className="p-4 text-xs">
+                                <p className="font-bold text-slate-700">{course.faculty || 'General'}</p>
+                                <p className="text-[10px] text-slate-400">{course.department || '---'}</p>
+                              </td>
+                              <td className="p-4 text-xs font-bold text-slate-600">
+                                {course.level || '100L'}
+                              </td>
+                              <td className="p-4 text-right">
+                                {course.id && (
+                                  <button
+                                    onClick={() => handleDeleteCourse(course.id)}
+                                    className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TREASURY TAB */}
+              {activeTab === 'treasury' && (
+                <div className="p-8 space-y-10">
+                  {/* BANK ACCOUNT CONFIGURATION */}
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Landmark className="w-5 h-5 text-emerald-500" /> Bank Details & Payment Accounts
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">Official bank accounts displayed to students for direct payment verification</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Add New Bank Account</h4>
+                        <input
+                          type="text"
+                          placeholder="Bank Name (e.g. UBA, OPAY)"
+                          value={bankSetup.bankName}
+                          onChange={e => setBankSetup({ ...bankSetup, bankName: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Account Number"
+                          value={bankSetup.accountNumber}
+                          onChange={e => setBankSetup({ ...bankSetup, accountNumber: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Account Name"
+                          value={bankSetup.accountName}
+                          onChange={e => setBankSetup({ ...bankSetup, accountName: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <button
+                          onClick={handleAddBank}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
+                        >
+                          Save Bank Details
+                        </button>
+                      </div>
+
+                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {banks.map((b, idx) => (
+                          <div key={idx} className="bg-slate-900 text-white p-6 rounded-2xl space-y-3 relative overflow-hidden">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">{b.bankName}</span>
+                              <CreditCard className="w-5 h-5 text-slate-400" />
+                            </div>
+                            <div>
+                              <p className="text-xl font-mono font-bold tracking-wider">{b.accountNumber}</p>
+                              <p className="text-xs text-slate-400 uppercase mt-1">{b.accountName}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PORTAL FEES & LOAN SETTINGS */}
+                  <div className="space-y-6 pt-8 border-t border-slate-100">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Settings className="w-5 h-5 text-emerald-500" /> Fee Policy & Student Loan Limits
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">Configure global fee limits and loan caps across the institution</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Acceptance Fee (₦)</label>
+                        <input
+                          type="number"
+                          value={acceptanceFee}
+                          onChange={e => setAcceptanceFee(Number(e.target.value))}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Maximum Student Loan (₦)</label>
+                        <input
+                          type="number"
+                          value={maxLoanAmount}
+                          onChange={e => setMaxLoanAmount(Number(e.target.value))}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Early Payment Discount (%)</label>
+                        <input
+                          type="number"
+                          value={earlyPaymentDiscount}
+                          onChange={e => setEarlyPaymentDiscount(Number(e.target.value))}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <button
+                          onClick={handleUpdateTreasurySettings}
+                          disabled={savingTreasury}
+                          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all disabled:opacity-50"
+                        >
+                          <Save className="w-4 h-4" />
+                          {savingTreasury ? 'Saving Settings...' : 'Save Treasury Settings'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RECORD MANUAL PAYMENT */}
+                  <div className="space-y-6 pt-8 border-t border-slate-100">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <DollarSign className="w-5 h-5 text-emerald-500" /> Record Offline Payment
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">Manually credit a student payment into system ledger</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <input
+                        type="text"
+                        placeholder="Student UID / User ID"
+                        value={manualPay.uid}
+                        onChange={e => setManualPay({ ...manualPay, uid: e.target.value })}
+                        className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                      />
+                      <select
+                        value={manualPay.type}
+                        onChange={e => setManualPay({ ...manualPay, type: e.target.value as any })}
+                        className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                      >
+                        <option value="tuition">Tuition Fee</option>
+                        <option value="hostel">Hostel Accommodation</option>
+                        <option value="admission">Admission Acceptance</option>
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Amount (₦)"
+                        value={manualPay.amount || ''}
+                        onChange={e => setManualPay({ ...manualPay, amount: Number(e.target.value) })}
+                        className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                      />
+                      <button
+                        onClick={handleRecordManualPay}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
+                      >
+                        Record Payment
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* LOANS TAB */}
+              {activeTab === 'loans' && (
+                <div className="p-8 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                      <Landmark className="w-5 h-5 text-emerald-500" /> Student Loan Applications
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">Review financial assistance and loan requests from students</p>
+                  </div>
+
+                  <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Applicant & UID</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Amount Requested</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Reason / Purpose</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Status</th>
+                          <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {loans.length === 0 ? (
+                          <tr><td colSpan={5} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No loan applications found</td></tr>
+                        ) : (
+                          loans.map(loan => (
+                            <tr key={loan.id} className="hover:bg-slate-50/80 transition-all">
+                              <td className="p-4">
+                                <p className="font-bold text-slate-900">{loan.studentName || loan.uid}</p>
+                                <p className="text-[10px] text-slate-400 font-mono">{loan.uid}</p>
+                              </td>
+                              <td className="p-4 font-bold text-slate-900 text-sm">
+                                ₦{loan.amount.toLocaleString()}
+                              </td>
+                              <td className="p-4 text-xs text-slate-600 max-w-xs truncate">
+                                {loan.reason || 'Tuition Assistance'}
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                                  loan.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                                  loan.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                                  'bg-amber-50 text-amber-600'
+                                }`}>
+                                  {loan.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                {loan.status === 'pending' ? (
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => handleLoanStatus(loan.id, 'approved')}
+                                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => handleLoanStatus(loan.id, 'rejected')}
+                                      className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs font-bold text-slate-400 uppercase italic">
+                                    {loan.status}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SETUP TAB */}
+              {activeTab === 'setup' && (
+                <div className="p-8 space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* PROVISION COURSE */}
+                    <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h3 className="text-md font-bold flex items-center gap-3 text-slate-900">
+                        <Plus className="w-5 h-5 text-emerald-500" /> Provision Course
+                      </h3>
+                      <div className="space-y-3">
+                        <input
+                          placeholder="Course Code (e.g. CSC 201)"
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold outline-none focus:ring-2 ring-emerald-500/20"
+                          value={newCourse.courseCode}
+                          onChange={e => setNewCourse({ ...newCourse, courseCode: e.target.value })}
+                        />
+                        <input
+                          placeholder="Course Title"
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold outline-none focus:ring-2 ring-emerald-500/20"
+                          value={newCourse.title}
+                          onChange={e => setNewCourse({ ...newCourse, title: e.target.value })}
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={newCourse.faculty}
+                            onChange={e => setNewCourse({ ...newCourse, faculty: e.target.value })}
+                            className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                          >
+                            {FACULTIES.map(f => <option key={f} value={f}>{f}</option>)}
+                          </select>
+                          <select
+                            value={newCourse.level}
+                            onChange={e => setNewCourse({ ...newCourse, level: e.target.value })}
+                            className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                          >
+                            {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                          </select>
+                        </div>
+                        <button
+                          onClick={handleAddCourse}
+                          className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md"
+                        >
+                          Register Course
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* CREATE DEPARTMENT */}
+                    <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h3 className="text-md font-bold flex items-center gap-3 text-slate-900">
+                        <Building2 className="w-5 h-5 text-emerald-500" /> Create Department
+                      </h3>
+                      <div className="space-y-3">
+                        <select
+                          value={newDept.faculty}
+                          onChange={e => setNewDept({ ...newDept, faculty: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                        >
+                          {FACULTIES.map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                        <input
+                          placeholder="Department Name"
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold outline-none focus:ring-2 ring-emerald-500/20"
+                          value={newDept.name}
+                          onChange={e => setNewDept({ ...newDept, name: e.target.value })}
+                        />
+                        <button
+                          onClick={handleAddDept}
+                          className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-800 transition-all shadow-md"
+                        >
+                          Create Department
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MANUAL STUDENT REGISTRATION */}
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <h3 className="text-md font-bold flex items-center gap-3 text-slate-900">
+                      <UserPlus className="w-5 h-5 text-emerald-500" /> Register Student Manually
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <input
+                        placeholder="Full Name"
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                        value={manualStudent.name}
+                        onChange={e => setManualStudent({ ...manualStudent, name: e.target.value })}
+                      />
+                      <input
+                        placeholder="Email Address"
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                        value={manualStudent.email}
+                        onChange={e => setManualStudent({ ...manualStudent, email: e.target.value })}
+                      />
+                      <select
+                        value={manualStudent.faculty}
+                        onChange={e => setManualStudent({ ...manualStudent, faculty: e.target.value })}
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                      >
+                        {FACULTIES.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <input
+                        placeholder="Department"
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                        value={manualStudent.department}
+                        onChange={e => setManualStudent({ ...manualStudent, department: e.target.value })}
+                      />
+                      <select
+                        value={manualStudent.level}
+                        onChange={e => setManualStudent({ ...manualStudent, level: e.target.value })}
+                        className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-bold"
+                      >
+                        {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                      <button
+                        onClick={handleAddManualStudent}
+                        className="bg-emerald-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md"
+                      >
+                        Enroll Student
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         )}
@@ -530,19 +1137,22 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                   <h2 className="text-2xl font-bold text-slate-900">Application Dossier</h2>
                   <button onClick={() => setSelectedApp(null)}><XCircle className="w-6 h-6 text-slate-300 hover:text-slate-500" /></button>
                </div>
-               {/* Simplified Modal Content */}
                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden">
-                    {selectedApp.faceUrl && <img src={selectedApp.faceUrl} className="w-full h-full object-cover" />}
+                    {selectedApp.faceUrl ? <img src={selectedApp.faceUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs uppercase">No Photo</div>}
                   </div>
                   <div className="md:col-span-2 space-y-6">
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Candidate Name</p>
                       <p className="text-xl font-bold text-slate-900">{selectedApp.name}</p>
                     </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Program Applied</p>
+                      <p className="text-sm font-bold text-slate-700">{selectedApp.faculty} - {selectedApp.department}</p>
+                    </div>
                     <div className="flex gap-4">
-                      <button onClick={() => handleApprove(selectedApp)} className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">Approve</button>
-                      <button onClick={() => handleReject(selectedApp)} className="flex-1 bg-rose-50 text-rose-600 py-4 rounded-xl font-bold">Reject</button>
+                      <button onClick={() => handleApprove(selectedApp)} className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">Approve Application</button>
+                      <button onClick={() => handleReject(selectedApp)} className="flex-1 bg-rose-50 text-rose-600 py-4 rounded-xl font-bold">Reject Application</button>
                     </div>
                   </div>
                </div>
