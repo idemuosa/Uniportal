@@ -325,7 +325,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
     (s.department || '').toLowerCase().includes(studentSearch.toLowerCase())
   );
 
-  const filteredCourses = courses.filter(c =>
+  const filteredCourses = courses.filter((c: any) =>
     (c.courseCode || c.course_code || '').toLowerCase().includes(courseSearch.toLowerCase()) ||
     (c.title || '').toLowerCase().includes(courseSearch.toLowerCase()) ||
     (c.department || '').toLowerCase().includes(courseSearch.toLowerCase())
@@ -730,7 +730,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                         {filteredCourses.length === 0 ? (
                           <tr><td colSpan={6} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No courses found</td></tr>
                         ) : (
-                          filteredCourses.map(course => (
+                          filteredCourses.map((course: any) => (
                             <tr key={course.id || course.courseCode} className="hover:bg-slate-50/80 transition-all">
                               <td className="p-4 font-mono font-bold text-emerald-600 text-xs">
                                 {course.courseCode || course.course_code}
@@ -950,7 +950,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
                         {loans.length === 0 ? (
                           <tr><td colSpan={5} className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No loan applications found</td></tr>
                         ) : (
-                          loans.map(loan => (
+                          loans.map((loan: any) => (
                             <tr key={loan.id} className="hover:bg-slate-50/80 transition-all">
                               <td className="p-4">
                                 <p className="font-bold text-slate-900">{loan.studentName || loan.uid}</p>
