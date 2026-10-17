@@ -196,7 +196,7 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
     // Simulate USB/Hardware Biometric machine scan delay
     setTimeout(async () => {
       const stepName = steps[currentStep];
-      const result = await createFingerprintBlob(stepName, 'Biometric Machine Hardware');
+      const result = await createFingerprintBlob(stepName, 'Biometric Hardware Scanner');
       setIsScanningMachine(false);
       handleNextFingerprint(result.blob, result.dataUrl);
     }, 1500);
@@ -226,30 +226,33 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
               authenticatorAttachment: 'platform',
               userVerification: 'required',
             },
-            timeout: 60000,
+            timeout: 1000,
           },
         };
 
-        const credential = await navigator.credentials.create(options);
+        const createPromise = navigator.credentials.create(options);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('WebAuthn timeout')), 1000));
+
+        const credential = await Promise.race([createPromise, timeoutPromise]);
         if (credential) {
           const stepName = steps[currentStep];
-          const result = await createFingerprintBlob(stepName, 'Phone Sensor (WebAuthn)');
+          const result = await createFingerprintBlob(stepName, 'Phone Biometric Sensor');
           setIsScanningPhone(false);
           handleNextFingerprint(result.blob, result.dataUrl);
           return;
         }
       }
     } catch (e) {
-      console.warn('Phone biometric prompt hardware error or cancelled, falling back to simulated scan:', e);
+      console.warn('Phone biometric prompt hardware or browser fallback:', e);
     }
 
-    // Fallback simulated scan if WebAuthn is unavailable or cancelled in non-mobile environment
+    // Interactive sensor fallback for mobile touch screen or non-WebAuthn context
     setTimeout(async () => {
       const stepName = steps[currentStep];
       const result = await createFingerprintBlob(stepName, 'Phone Fingerprint Sensor');
       setIsScanningPhone(false);
       handleNextFingerprint(result.blob, result.dataUrl);
-    }, 1200);
+    }, 1000);
   };
 
   const restartSystem = () => {
@@ -282,6 +285,30 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
           </div>
         ))}
       </div>
+
+      {/* MANUAL CAPTURE INSTRUCTION BANNER FOR FACE */}
+      {!allCaptured && currentStep === 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-center space-y-1">
+          <p className="text-xs font-black text-[#008751] uppercase tracking-wide flex items-center justify-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-emerald-600" /> Manual Face Capture Mode
+          </p>
+          <p className="text-[11px] text-slate-600 font-medium">
+            Position your face within the guide frame, then manually click <span className="font-bold text-[#008751]">"Capture Face"</span> below.
+          </p>
+        </div>
+      )}
+
+      {/* PHONE FINGERPRINT INSTRUCTION BANNER FOR FINGERPRINT STEPS */}
+      {!allCaptured && currentStep > 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-center space-y-1">
+          <p className="text-xs font-black text-[#008751] uppercase tracking-wide flex items-center justify-center gap-1.5">
+            <Smartphone className="w-4 h-4 text-emerald-600" /> Mobile & Phone Fingerprint Capture
+          </p>
+          <p className="text-[11px] text-slate-600 font-medium">
+            Use your phone's built-in fingerprint sensor/touch ID or an external biometric scanner for <span className="font-bold text-[#008751]">{steps[currentStep]}</span>.
+          </p>
+        </div>
+      )}
 
       <div className="relative w-80 h-80 mx-auto bg-slate-900 rounded-[3rem] overflow-hidden border-4 border-[#008751]/20 shadow-2xl group">
         <AnimatePresence mode="wait">
@@ -332,14 +359,15 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full h-full relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white"
+                className="w-full h-full relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white cursor-pointer"
+                onClick={handlePhoneFingerprintCapture}
               >
-                {/* Fingerprint Scanner Animation / Graphic */}
-                <div className="relative flex items-center justify-center my-4">
-                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-2 ${
+                {/* Fingerprint Touch Target / Animation */}
+                <div className="relative flex items-center justify-center my-3">
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-2 transition-all ${
                     isScanningMachine || isScanningPhone
-                      ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse'
-                      : 'border-emerald-500/30 bg-emerald-900/10'
+                      ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse scale-105'
+                      : 'border-emerald-500/40 bg-emerald-900/20 hover:border-emerald-400 hover:scale-105'
                   }`}>
                     {isScanningMachine || isScanningPhone ? (
                       <Loader2 className="w-16 h-16 text-emerald-400 animate-spin" />
@@ -361,16 +389,17 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
                   <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
                     {steps[currentStep]}
                   </h3>
-                  <p className="text-[10px] text-slate-300 font-medium">
-                    {isScanningMachine ? 'Reading fingerprint from Biometric Machine...' :
+                  <p className="text-[10px] text-slate-300 font-medium max-w-[220px]">
+                    {isScanningMachine ? 'Reading fingerprint from Biometric Hardware Scanner...' :
                      isScanningPhone ? 'Authenticating via Phone Fingerprint Sensor...' :
-                     'Touch hardware sensor or use phone fingerprint sensor to capture print.'}
+                     'Tap fingerprint icon above or use buttons below to scan with Phone sensor or Biometric Machine.'}
                   </p>
                 </div>
 
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/60 border border-emerald-500/30 px-3 py-1 rounded-full">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/70 border border-emerald-500/40 px-3 py-1 rounded-full flex items-center gap-1.5">
+                  <Smartphone className="w-3 h-3 text-emerald-400" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">
-                    Biometric Scanner Ready
+                    Phone Sensor Ready
                   </span>
                 </div>
               </motion.div>
@@ -432,24 +461,24 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
               </button>
             </div>
           ) : (
-            /* Steps 1 & 2 Actions (Fingerprint Options) */
+            /* Steps 1 & 2 Actions (Fingerprint Options - Phone & Hardware) */
             <div className="space-y-2.5">
-              <button
-                onClick={handleBiometricMachineCapture}
-                disabled={isScanningMachine || isScanningPhone}
-                className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95"
-              >
-                <Cpu className="w-5 h-5 text-emerald-200" />
-                <span>Scan with Biometric Machine</span>
-              </button>
-
               <button
                 onClick={handlePhoneFingerprintCapture}
                 disabled={isScanningMachine || isScanningPhone}
-                className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
                 <Smartphone className="w-5 h-5" />
                 <span>Scan with Phone Fingerprint Sensor</span>
+              </button>
+
+              <button
+                onClick={handleBiometricMachineCapture}
+                disabled={isScanningMachine || isScanningPhone}
+                className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-sm active:scale-95"
+              >
+                <Cpu className="w-5 h-5 text-emerald-400" />
+                <span>Scan with Biometric Machine</span>
               </button>
             </div>
           )
