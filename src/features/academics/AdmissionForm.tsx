@@ -219,12 +219,24 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
               Your application is currently being analyzed by the Central Admission Committee. Credentials and biometrics are under verification.
             </p>
 
-            <div className="pt-4 flex justify-center">
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => setShowSlipModal(true)}
-                className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95"
+                className="w-full sm:w-auto bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95"
               >
                 <Printer className="w-5 h-5" /> Print Application Slip (PDF)
+              </button>
+              <button
+                onClick={() => { window.location.href = '/'; }}
+                className="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95"
+              >
+                <ArrowRight className="w-5 h-5" /> Proceed to Main Dashboard
+              </button>
+              <button
+                onClick={() => { setApplication(null); setStep('program'); }}
+                className="w-full sm:w-auto bg-white border border-[#008751]/20 hover:bg-slate-50 text-[#008751] px-6 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95"
+              >
+                Start New Application
               </button>
             </div>
           </div>
