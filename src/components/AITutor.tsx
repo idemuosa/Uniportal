@@ -3,7 +3,7 @@ import { Bot, X, Send, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://pharmacy-api-zyy0.onrender.com';
 
 export default function AITutor({ user }: { user: UserProfile | null }) {
   const [isOpen, setIsOpen] = useState(false);
