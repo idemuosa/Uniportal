@@ -11,14 +11,22 @@ import AttendanceLogger from '../../components/AttendanceLogger';
 
 export default function StudentPortal({ user }: { user: UserProfile }) {
   const [payments, setPayments] = useState<any[]>([]);
+  const [examResult, setExamResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // In a real app, this would be a unified student profile endpoint
-        const payRes = await api.get('/finances/payments/');
+        const [payRes, examRes] = await Promise.all([
+          api.get('/finances/payments/').catch(() => ({ data: [] })),
+          api.get('/academics/entrance-exams/my-result', {
+            params: { regNo: user.jambRegNo || undefined, uid: user.uid || undefined }
+          }).catch(() => ({ data: null }))
+        ]);
         setPayments(payRes.data);
+        if (examRes.data) {
+          setExamResult(examRes.data);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -26,7 +34,7 @@ export default function StudentPortal({ user }: { user: UserProfile }) {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const stats = [
     { label: 'Academic Standing', value: 'Good', icon: <Award className="text-emerald-500" /> },
@@ -77,6 +85,61 @@ export default function StudentPortal({ user }: { user: UserProfile }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* 📋 MAIN ACTIVITY FEED */}
         <div className="lg:col-span-8 space-y-8">
+           {/* ENTRANCE EXAM & ADMISSION GUARANTEE BANNER */}
+           <div className="bg-white p-8 rounded-[2.5rem] border border-emerald-900/10 shadow-lg space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-emerald-950 uppercase italic tracking-tight">
+                      Entrance Exam & Admission Status
+                    </h3>
+                    <p className="text-xs text-emerald-900/50 font-bold uppercase tracking-wider">
+                      CBT Assessment & Registry Release
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  to="/entrance-exam"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md flex items-center gap-2"
+                >
+                  {examResult ? 'View Exam Details' : 'Take CBT Entrance Exam'} <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {examResult ? (
+                <div className="bg-slate-50 p-6 rounded-2xl border border-emerald-900/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Registration No: <span className="text-slate-900">{examResult.registrationNumber}</span>
+                    </p>
+                    <p className="text-2xl font-black text-emerald-700">
+                      Score: {examResult.percentage}% ({examResult.stream})
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest inline-block ${
+                      examResult.admissionGuaranteed || examResult.status === 'released'
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : 'bg-amber-100 text-amber-700 border border-amber-200'
+                    }`}>
+                      {examResult.admissionGuaranteed || examResult.status === 'released'
+                        ? '✓ ADMISSION GUARANTEED & RELEASED'
+                        : '⏳ Pending Registry Release'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-100 text-xs text-emerald-900/70 font-medium">
+                  Take your departmental or Direct Entry entrance CBT exam using your Registration Number. Once completed, your score will be reviewed by Admin to guarantee your admission.
+                </div>
+              )}
+           </div>
+
            <div className="bg-slate-50 p-10 rounded-[4rem] border border-emerald-900/5 relative overflow-hidden min-h-[500px]">
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-xl font-black text-emerald-900 uppercase italic tracking-tighter flex items-center gap-4">
