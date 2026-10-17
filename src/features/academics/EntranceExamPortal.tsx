@@ -27,13 +27,15 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
   const [examStep, setExamStep] = useState<'login' | 'exam' | 'submitted'>('login');
 
   // Registration & Stream Config
-  const [regNo, setRegNo] = useState(user?.jambRegNo || '');
+  const [regNo, setRegNo] = useState((user as any)?.examinationNumber || user?.jambRegNo || '');
   const [stream, setStream] = useState<'JAMB' | 'Direct Entry'>('JAMB');
   const [candidateName, setCandidateName] = useState(user?.name || '');
   const [candidateEmail, setCandidateEmail] = useState(user?.email || '');
   const [faculty, setFaculty] = useState(user?.faculty || 'Science');
   const [department, setDepartment] = useState(user?.department || 'Computer Science');
   const [jambSubjectsStr, setJambSubjectsStr] = useState('English Language, Mathematics, Physics, Chemistry');
+  const [jambScore, setJambScore] = useState<number | null>(user?.jambScore || null);
+  const [lookupLoading, setLookupLoading] = useState(false);
 
   // Exam CBT State
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -63,8 +65,10 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
 
   // Load candidate's existing result if already taken on mount
   useEffect(() => {
-    if (user?.jambRegNo || user?.uid) {
-      checkExistingResult(user.jambRegNo || '', user.uid);
+    const termToSearch = (user as any)?.examinationNumber || user?.jambRegNo || user?.uid;
+    if (termToSearch) {
+      checkExistingResult(termToSearch, user?.uid);
+      fetchCandidateDetails(termToSearch);
     }
   }, [user]);
 
@@ -82,9 +86,35 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
     }
   };
 
+  // Auto-fetch candidate details & attached JAMB subjects on entering examination number
+  const fetchCandidateDetails = async (term: string) => {
+    if (!term || term.trim().length < 3) return;
+    setLookupLoading(true);
+    try {
+      const res = await api.get('/academics/entrance-exams/candidate-lookup', {
+        params: { term: term.trim() }
+      });
+      if (res.data && res.data.found) {
+        if (res.data.candidateName) setCandidateName(res.data.candidateName);
+        if (res.data.candidateEmail) setCandidateEmail(res.data.candidateEmail);
+        if (res.data.stream) setStream(res.data.stream);
+        if (res.data.faculty) setFaculty(res.data.faculty);
+        if (res.data.department) setDepartment(res.data.department);
+        if (res.data.jambScore) setJambScore(res.data.jambScore);
+        if (res.data.jambSubjects && res.data.jambSubjects.length > 0) {
+          setJambSubjectsStr(res.data.jambSubjects.join(', '));
+        }
+      }
+    } catch (e) {
+      console.warn('Candidate lookup info:', e);
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   const handleStartExam = async () => {
     if (!regNo.trim()) {
-      toast.error('Please enter your JAMB Registration Number or Direct Entry CBT Number');
+      toast.error('Please enter your Examination Number or JAMB Registration Number');
       return;
     }
 
@@ -109,7 +139,7 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
       }
 
       const qList: Question[] = res.data.questions;
-      if (qList.length === 0) {
+      if (!qList || qList.length === 0) {
         toast.error('No exam questions configured for this selection. Please contact support.');
         return;
       }
@@ -271,14 +301,27 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
             {/* Registration Inputs */}
             <div className="space-y-4 pt-2">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  {stream === 'JAMB' ? 'JAMB Registration Number' : 'Direct Entry CBT Number / Application ID'}
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Examination Number / JAMB Registration Number
+                  </label>
+                  {lookupLoading && (
+                    <span className="text-[10px] text-emerald-600 font-bold animate-pulse">
+                      Loading candidate details...
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
-                  placeholder={stream === 'JAMB' ? 'e.g. 202510928374AB' : 'e.g. DE-2025-88392'}
+                  placeholder="e.g. EXM202583921 or 202510928374AB"
                   value={regNo}
-                  onChange={e => setRegNo(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setRegNo(val);
+                    if (val.trim().length >= 4) {
+                      fetchCandidateDetails(val);
+                    }
+                  }}
                   className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -307,19 +350,26 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
               </div>
 
               {stream === 'JAMB' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Enrolled JAMB Subjects (Comma Separated)
-                  </label>
+                <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200/80 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-black text-emerald-900 uppercase tracking-wider">
+                      Auto-Loaded Enrolled Subjects & JAMB Score
+                    </label>
+                    {jambScore !== null && jambScore !== undefined && (
+                      <span className="px-3 py-1 bg-emerald-600 text-white rounded-full font-black text-[10px] uppercase">
+                        JAMB Score: {jambScore} Marks
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={jambSubjectsStr}
                     onChange={e => setJambSubjectsStr(e.target.value)}
                     placeholder="English Language, Mathematics, Physics, Chemistry"
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-3.5 rounded-xl bg-white border border-emerald-300 font-bold text-emerald-950 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Your entrance CBT will be generated specifically matching these subjects.
+                  <p className="text-[10px] text-emerald-800/70 font-medium">
+                    ✓ As soon as you enter your Examination Number, the subjects attached with your JAMB Score automatically appear for your exam hall entry.
                   </p>
                 </div>
               )}

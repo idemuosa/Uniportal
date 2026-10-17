@@ -47,6 +47,7 @@ const User = sequelize.define('User', {
   department: { type: DataTypes.STRING },
   level: { type: DataTypes.STRING, defaultValue: '100L' },
   matricNo: { type: DataTypes.STRING },
+  examinationNumber: { type: DataTypes.STRING },
   photoUrl: { type: DataTypes.STRING }
 });
 
@@ -75,6 +76,7 @@ const Application = sequelize.define('Application', {
   type: { type: DataTypes.STRING },
   faculty: { type: DataTypes.STRING },
   department: { type: DataTypes.STRING },
+  examinationNumber: { type: DataTypes.STRING },
   status: { type: DataTypes.STRING, defaultValue: 'pending' },
   faceUrl: { type: DataTypes.STRING },
   formData: { type: DataTypes.JSON }

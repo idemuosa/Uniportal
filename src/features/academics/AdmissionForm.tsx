@@ -179,8 +179,11 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
     const jambSubList = application.jambSubjects?.map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`) ||
       formData.jambSubjects?.filter(s => s.subject).map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`);
 
+    const examNum = (application as any).examinationNumber || (application as any).examination_number || (application as any).formData?.examinationNumber || 'EXM2025109';
+
     const candidateData: CandidateData = {
       candidateId: application.id ? `LUK-ADM-${application.id}` : undefined,
+      examinationNumber: examNum,
       name: user.name,
       email: user.email,
       role: 'Admission Candidate',
@@ -215,6 +218,20 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
                <CheckCircle className="w-10 h-10" />
             </div>
             <h2 className="text-3xl font-black text-[#008751] tracking-tighter uppercase">Application Submitted</h2>
+
+            {/* GENERATED EXAMINATION NUMBER BANNER */}
+            <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white p-6 rounded-2xl shadow-lg space-y-2 max-w-lg mx-auto">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">
+                Your Official Examination Hall Entry Number
+              </p>
+              <p className="text-3xl font-black font-mono tracking-wider text-emerald-400">
+                {examNum}
+              </p>
+              <p className="text-[11px] text-emerald-100/70">
+                Use this Examination Number to enter the exam hall and access your CBT entrance exam.
+              </p>
+            </div>
+
             <div className="flex items-center justify-center gap-4">
               <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
                 application.status === 'pending' ? 'bg-amber-100 text-amber-600 border border-amber-200' :
@@ -227,7 +244,7 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
               Your application is currently being analyzed by the Central Admission Committee. Credentials and biometrics are under verification.
             </p>
 
-            <div className="pt-4 flex justify-center">
+            <div className="pt-4 flex justify-center gap-4">
               <button
                 onClick={() => setShowSlipModal(true)}
                 className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95"

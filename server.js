@@ -426,7 +426,8 @@ app.post('/api/users/sync', authenticate, async (req, res) => {
 // Academics Applications
 app.get(['/api/academics/applications/', '/api/academics/applications'], authenticate, async (req, res) => {
   try {
-    const apps = await Application.findAll();
+    const where = req.user.role === 'admin' ? {} : { uid: req.user.uid };
+    const apps = await Application.findAll({ where, order: [['createdAt', 'DESC']] });
     res.json(apps);
   } catch (error) {
     res.json([]);
@@ -435,16 +436,46 @@ app.get(['/api/academics/applications/', '/api/academics/applications'], authent
 
 app.post(['/api/academics/applications/', '/api/academics/applications'], authenticate, async (req, res) => {
   try {
+    // Check if user already has an examination number or generate a new one
+    const user = await User.findByPk(req.user.uid);
+    const existingApp = await Application.findOne({ where: { uid: req.user.uid } });
+
+    let examinationNumber = existingApp?.examinationNumber || user?.examinationNumber;
+
+    if (!examinationNumber) {
+      // Generate unique examination number (e.g. EXM202583921)
+      const randomDigits = Math.floor(100000 + Math.random() * 900000);
+      const year = new Date().getFullYear();
+      examinationNumber = `EXM${year}${randomDigits}`;
+    }
+
+    // Save examination number to User profile as well
+    if (user) {
+      user.examinationNumber = examinationNumber;
+      await user.save();
+    }
+
     const appRecord = await Application.create({
       uid: req.user.uid,
       type: req.body.type || 'undergraduate',
       faculty: req.body.faculty,
       department: req.body.department,
+      examinationNumber,
+      faceUrl: req.body.face_url || req.body.faceUrl,
       status: 'pending',
-      formData: req.body
+      formData: {
+        ...req.body,
+        examinationNumber
+      }
     });
-    res.status(201).json(appRecord);
+
+    res.status(201).json({
+      ...appRecord.toJSON(),
+      examinationNumber,
+      examination_number: examinationNumber
+    });
   } catch (error) {
+    logger.error('Application creation error:', error);
     res.status(500).json({ error: 'Application creation failed' });
   }
 });
@@ -651,19 +682,90 @@ app.post(['/api/academics/entrance-exams/questions/', '/api/academics/entrance-e
   }
 });
 
-// 3. Start Entrance Exam Session by JAMB/CBT Reg Number
+// 2b. Candidate Details Lookup (by Examination Number or JAMB Reg No)
+app.get(['/api/academics/entrance-exams/candidate-lookup/', '/api/academics/entrance-exams/candidate-lookup'], async (req, res) => {
+  try {
+    const { term } = req.query;
+    const regNo = (term || '').trim();
+
+    if (!regNo) {
+      return res.status(400).json({ error: 'Examination number or registration number required' });
+    }
+
+    // Look up by examinationNumber or jambRegNo in User or Application
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { examinationNumber: regNo },
+          { username: regNo },
+          { email: regNo }
+        ]
+      }
+    });
+
+    let appRecord = null;
+    if (user) {
+      appRecord = await Application.findOne({ where: { uid: user.uid }, order: [['createdAt', 'DESC']] });
+    } else {
+      appRecord = await Application.findOne({
+        where: {
+          [Op.or]: [
+            { examinationNumber: regNo },
+            { id: regNo }
+          ]
+        },
+        order: [['createdAt', 'DESC']]
+      });
+    }
+
+    const formData = appRecord?.formData || {};
+    const jambSubObjects = formData.jambSubjects || [];
+    let extractedSubjects = [];
+
+    if (Array.isArray(jambSubObjects) && jambSubObjects.length > 0) {
+      extractedSubjects = jambSubObjects.map(s => typeof s === 'string' ? s : s.subject).filter(Boolean);
+    }
+
+    if (extractedSubjects.length === 0) {
+      extractedSubjects = ['English Language', 'Mathematics', 'Physics', 'Chemistry'];
+    }
+
+    res.json({
+      found: !!(user || appRecord),
+      examinationNumber: appRecord?.examinationNumber || user?.examinationNumber || regNo,
+      jambRegNo: formData.jambRegNo || formData.jamb_reg_no || '',
+      candidateName: user?.name || (formData.first_name ? `${formData.first_name} ${formData.last_name || ''}` : '') || 'Candidate',
+      candidateEmail: user?.email || formData.email || '',
+      stream: formData.type?.includes('Direct Entry') ? 'Direct Entry' : 'JAMB',
+      faculty: appRecord?.faculty || user?.faculty || formData.faculty || '',
+      department: appRecord?.department || user?.department || formData.department || '',
+      jambScore: formData.jambScore || formData.jamb_score || 0,
+      jambSubjects: extractedSubjects
+    });
+  } catch (error) {
+    logger.error('Candidate lookup error:', error);
+    res.status(500).json({ error: 'Candidate lookup failed' });
+  }
+});
+
+// 3. Start Entrance Exam Session by JAMB/CBT Reg Number or Examination Number
 app.post(['/api/academics/entrance-exams/start/', '/api/academics/entrance-exams/start'], async (req, res) => {
   try {
     const { registrationNumber, stream, subjects, faculty, department } = req.body;
     const regNo = (registrationNumber || '').trim();
 
     if (!regNo) {
-      return res.status(400).json({ error: 'JAMB / Direct Entry CBT Registration Number is required' });
+      return res.status(400).json({ error: 'JAMB / Examination Registration Number is required' });
     }
 
     // Check if exam was already taken
     const existingSubmission = await EntranceExamSubmission.findOne({
-      where: { registrationNumber: regNo }
+      where: {
+        [Op.or]: [
+          { registrationNumber: regNo },
+          { uid: regNo }
+        ]
+      }
     });
 
     if (existingSubmission) {
@@ -725,7 +827,14 @@ app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exam
     }
 
     // Double-check existing
-    const existing = await EntranceExamSubmission.findOne({ where: { registrationNumber: regNo } });
+    const existing = await EntranceExamSubmission.findOne({
+      where: {
+        [Op.or]: [
+          { registrationNumber: regNo },
+          { uid: uid ? String(uid) : '___NO_UID___' }
+        ]
+      }
+    });
     if (existing) {
       return res.status(400).json({ error: 'Entrance exam already submitted for this registration number.' });
     }
@@ -741,19 +850,23 @@ app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exam
       }
       subjectBreakdown[sub].total += 1;
 
-      // Verify answer
+      // Verify answer safely
       let isCorrect = false;
-      if (ans.questionId) {
-        const dbQ = await EntranceExamQuestion.findByPk(ans.questionId);
-        if (dbQ) {
-          isCorrect = dbQ.correctAnswer === Number(ans.selectedOption);
-        } else {
-          // Check default questions dictionary
-          const defaultQs = Object.values(DEFAULT_CBT_QUESTIONS).flat();
-          const found = defaultQs.find(q => q.id === ans.questionId);
-          if (found) {
-            isCorrect = found.correctAnswer === Number(ans.selectedOption);
+      if (ans.questionId !== undefined && ans.questionId !== null) {
+        try {
+          const dbQ = await EntranceExamQuestion.findByPk(ans.questionId);
+          if (dbQ) {
+            isCorrect = Number(dbQ.correctAnswer) === Number(ans.selectedOption);
+          } else {
+            // Check default questions dictionary
+            const defaultQs = Object.values(DEFAULT_CBT_QUESTIONS).flat();
+            const found = defaultQs.find(q => String(q.id) === String(ans.questionId));
+            if (found) {
+              isCorrect = Number(found.correctAnswer) === Number(ans.selectedOption);
+            }
           }
+        } catch (qErr) {
+          logger.warn(`Failed to verify question ID ${ans.questionId}:`, qErr);
         }
       }
 
@@ -777,13 +890,13 @@ app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exam
       registrationNumber: regNo,
       candidateName: candidateName || 'Candidate',
       candidateEmail: candidateEmail || '',
-      uid: uid || null,
+      uid: uid ? String(uid) : null,
       stream: stream || 'JAMB',
       faculty: faculty || '',
       department: department || '',
-      totalScore: correctCount * 10,
-      maxScore: totalQuestions * 10,
-      percentage,
+      totalScore: Number(correctCount * 10),
+      maxScore: Number(totalQuestions * 10),
+      percentage: Number(percentage),
       subjectScores: subjectBreakdown,
       answers,
       status: 'submitted',
@@ -791,12 +904,16 @@ app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exam
     });
 
     // Notify Real-time socket & Admin
-    io.emit('new_entrance_exam_submission', {
-      id: submission.id,
-      registrationNumber: regNo,
-      candidateName: submission.candidateName,
-      percentage
-    });
+    try {
+      io.emit('new_entrance_exam_submission', {
+        id: submission.id,
+        registrationNumber: regNo,
+        candidateName: submission.candidateName,
+        percentage
+      });
+    } catch (ioErr) {
+      logger.warn('Socket notification error:', ioErr);
+    }
 
     res.status(201).json({
       message: 'Entrance exam submitted successfully!',
@@ -804,7 +921,7 @@ app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exam
     });
   } catch (error) {
     logger.error('Error submitting exam:', error);
-    res.status(500).json({ error: 'Failed to submit entrance exam' });
+    res.status(500).json({ error: error.message || 'Failed to submit entrance exam' });
   }
 });
 

@@ -3,6 +3,7 @@ import { Printer, CheckCircle, ShieldCheck, User, GraduationCap, Building2, Cale
 
 export interface CandidateData {
   candidateId?: string;
+  examinationNumber?: string;
   name: string;
   email: string;
   role?: string;
@@ -161,8 +162,15 @@ export default function CandidateRegistrationSlip({ candidate, onClose }: Candid
                 </div>
 
                 <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Candidate ID / Reg No</span>
-                  <span className="font-mono font-bold text-[#008751]">{regId}</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Examination Number</span>
+                  <span className="font-mono font-bold text-[#008751] text-sm bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {candidate.examinationNumber || regId}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Candidate Reference ID</span>
+                  <span className="font-mono font-bold text-slate-700">{regId}</span>
                 </div>
 
                 <div>
