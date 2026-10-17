@@ -16,5 +16,11 @@ class User(AbstractUser):
     examination_number = models.CharField(max_length=30, blank=True, null=True, unique=True, help_text="Examination registration number for result checking")
     isVerified = models.BooleanField(default=False)
 
+    def save(self, *args, **kwargs):
+        if self.is_superuser or self.is_staff:
+            if self.role != 'admin':
+                self.role = 'admin'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.username} - {self.role}"

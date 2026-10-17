@@ -4,8 +4,12 @@ import api from '../../api/axios';
 import { toast } from 'sonner';
 import { Mail, Lock, User, LogIn, UserPlus, Eye, EyeOff, AlertCircle, ArrowRight, GraduationCap, Building2, Bell, BookOpen, Fingerprint, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UniversityName } from '../../types';
+import { UniversityName, UserProfile } from '../../types';
 import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
+
+interface AuthProps {
+  onLoginSuccess?: (user: UserProfile) => void;
+}
 
 const getPasswordStrength = (password: string) => {
   let strength = 0;
@@ -17,7 +21,7 @@ const getPasswordStrength = (password: string) => {
   return strength;
 };
 
-export default function Auth() {
+export default function Auth({ onLoginSuccess }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +53,26 @@ export default function Auth() {
         localStorage.setItem('access_token', response.data.access);
         localStorage.setItem('refresh_token', response.data.refresh);
         
+        try {
+          const userResponse = await api.get('/accounts/user/');
+          const djangoUser = userResponse.data;
+          const userProfile: UserProfile = {
+            uid: djangoUser.id.toString(),
+            email: djangoUser.email,
+            role: djangoUser.role,
+            name: `${djangoUser.first_name || ''} ${djangoUser.last_name || ''}`.trim() || djangoUser.username,
+            university: 'UniPortal',
+            photoUrl: '',
+            faculty: djangoUser.faculty,
+            department: djangoUser.department,
+          };
+          if (onLoginSuccess) {
+            onLoginSuccess(userProfile);
+          }
+        } catch (e) {
+          console.error('Failed to load user profile on login:', e);
+        }
+
         toast.success('Login successful');
         navigate('/');
       } else {
