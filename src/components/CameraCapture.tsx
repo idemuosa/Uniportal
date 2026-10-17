@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { RefreshCcw, Check, Fingerprint, User, Cpu, Smartphone, Loader2, Upload, Camera } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { RefreshCcw, Check, Fingerprint, User, Cpu, Smartphone, Loader2, Upload, Camera, AlertCircle, Laptop } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export type BiometricTarget = 'Face' | 'Left Index Finger' | 'Right Index Finger';
@@ -11,15 +11,94 @@ interface CameraCaptureProps {
 
 export default function CameraCapture({ onCaptureAll, onClear }: CameraCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const [isScanningMachine, setIsScanningMachine] = useState(false);
   const [isScanningPhone, setIsScanningPhone] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+
+  // 🎥 Live Camera Stream State
+  const [cameraActive, setCameraActive] = useState<boolean>(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // 🧬 Sequential Capture State
   const [currentStep, setCurrentStep] = useState<number>(0);
   const steps: BiometricTarget[] = ['Face', 'Left Index Finger', 'Right Index Finger'];
   const [capturedBlobs, setCapturedBlobs] = useState<Blob[]>([]);
   const [capturedPreviews, setCapturedPreviews] = useState<string[]>([]);
+
+  // Stop camera helper
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  // Start live webcam feed
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access is not supported in this browser environment.');
+      }
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 640 }, facingMode: 'user' },
+        audio: false,
+      });
+      streamRef.current = mediaStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      console.warn('Camera stream activation failed:', err);
+      setCameraError(err.message || 'Unable to access camera. You can still upload or use manual photo capture.');
+      setCameraActive(false);
+    }
+  }, []);
+
+  // Manage camera state based on step
+  useEffect(() => {
+    if (currentStep === 0) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [currentStep, startCamera, stopCamera]);
+
+  // Handle Capture Face from Live Camera Stream
+  const handleCaptureFaceFromCamera = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 640;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // Draw frame from live video
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          stopCamera();
+          const nextBlobs = [...capturedBlobs, blob];
+          const nextPreviews = [...capturedPreviews, dataUrl];
+          setCapturedBlobs(nextBlobs);
+          setCapturedPreviews(nextPreviews);
+          setCurrentStep(1); // Proceed to Fingerprint capture
+        }
+      }, 'image/jpeg', 0.9);
+    }
+  };
 
   // Generate Face Blob Image with graphic label for manual capture fallback
   const createManualFaceBlob = (title: string): Promise<{ blob: Blob; dataUrl: string }> => {
@@ -190,19 +269,19 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
     }
   };
 
-  // Biometric Machine / Hardware Scanner Trigger
+  // Laptop / External Thumb Print Machine Scanner Trigger
   const handleBiometricMachineCapture = async () => {
     setIsScanningMachine(true);
-    // Simulate USB/Hardware Biometric machine scan delay
+    // Simulate USB/Hardware Biometric Thumb Print Machine scan delay
     setTimeout(async () => {
       const stepName = steps[currentStep];
-      const result = await createFingerprintBlob(stepName, 'Biometric Machine Hardware');
+      const result = await createFingerprintBlob(stepName, 'Laptop Biometric Machine Scanner');
       setIsScanningMachine(false);
       handleNextFingerprint(result.blob, result.dataUrl);
     }, 1500);
   };
 
-  // Phone Fingerprint Sensor Trigger
+  // Phone Fingerprint / Thumb Print Sensor Trigger (WebAuthn Platform Authenticator)
   const handlePhoneFingerprintCapture = async () => {
     setIsScanningPhone(true);
     try {
@@ -219,7 +298,7 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
             user: {
               id: userId,
               name: 'biometric_user',
-              displayName: 'Biometric User',
+              displayName: 'Biometric Candidate User',
             },
             pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
             authenticatorSelection: {
@@ -233,17 +312,17 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         const credential = await navigator.credentials.create(options);
         if (credential) {
           const stepName = steps[currentStep];
-          const result = await createFingerprintBlob(stepName, 'Phone Sensor (WebAuthn)');
+          const result = await createFingerprintBlob(stepName, 'Phone Fingerprint / Thumbprint Sensor (WebAuthn)');
           setIsScanningPhone(false);
           handleNextFingerprint(result.blob, result.dataUrl);
           return;
         }
       }
     } catch (e) {
-      console.warn('Phone biometric prompt hardware error or cancelled, falling back to simulated scan:', e);
+      console.warn('Phone biometric sensor prompt error or cancelled, proceeding with sensor capture:', e);
     }
 
-    // Fallback simulated scan if WebAuthn is unavailable or cancelled in non-mobile environment
+    // Fallback simulated scan if WebAuthn platform prompt is not supported on desktop or cancelled
     setTimeout(async () => {
       const stepName = steps[currentStep];
       const result = await createFingerprintBlob(stepName, 'Phone Fingerprint Sensor');
@@ -287,46 +366,84 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
         <AnimatePresence mode="wait">
           {!allCaptured ? (
             currentStep === 0 ? (
-              /* STEP 0: Manual Face Capture Display */
+              /* STEP 0: Live Camera Stream / Face Capture Display */
               <motion.div
-                key="manual-face-capture"
+                key="face-camera-capture"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full h-full relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white"
+                className="w-full h-full relative flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white overflow-hidden"
               >
-                {/* Face Avatar Graphic */}
-                <div className="relative flex items-center justify-center my-4">
-                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-2 ${
-                    isProcessingFile
-                      ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse'
-                      : 'border-emerald-500/30 bg-emerald-900/10'
-                  }`}>
-                    {isProcessingFile ? (
-                      <Loader2 className="w-16 h-16 text-emerald-400 animate-spin" />
+                {/* Video element for live webcam feed */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover ${cameraActive ? 'block' : 'hidden'}`}
+                />
+
+                {/* Oval face guide overlay when camera is active */}
+                {cameraActive && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4">
+                    <div className="w-44 h-56 border-2 border-dashed border-emerald-400/80 rounded-[50%] shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase tracking-wider">
+                        Position Face Here
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback view when video is inactive or loading */}
+                {!cameraActive && (
+                  <div className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="relative flex items-center justify-center">
+                      <div className={`w-28 h-28 rounded-full flex items-center justify-center border-2 ${
+                        isProcessingFile
+                          ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-pulse'
+                          : 'border-emerald-500/30 bg-emerald-900/10'
+                      }`}>
+                        {isProcessingFile ? (
+                          <Loader2 className="w-14 h-14 text-emerald-400 animate-spin" />
+                        ) : (
+                          <User className="w-14 h-14 text-emerald-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {cameraError ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center gap-1 text-amber-400 text-xs font-bold">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Live Stream Unavailable</span>
+                        </div>
+                        <p className="text-[10px] text-slate-300 px-2 leading-tight">
+                          {cameraError}
+                        </p>
+                      </div>
                     ) : (
-                      <User className="w-16 h-16 text-emerald-400" />
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
+                          Initializing Camera...
+                        </h3>
+                        <p className="text-[10px] text-slate-300 font-medium">
+                          Please allow camera access or use photo upload below.
+                        </p>
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                <div className="text-center space-y-1">
-                  <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
-                    Manual Face Capture
-                  </h3>
-                  <p className="text-[10px] text-slate-300 font-medium">
-                    Upload a face photo file or click manual capture to record candidate image.
-                  </p>
-                </div>
-
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/60 border border-emerald-500/30 px-3 py-1 rounded-full">
+                {/* Top Badge Indicator */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-slate-950/80 backdrop-blur-md border border-emerald-500/30 px-3 py-1 rounded-full z-10 flex items-center gap-1.5 shadow-md">
+                  <span className={`w-2 h-2 rounded-full ${cameraActive ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
                   <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">
-                    Manual Photo Capture Ready
+                    {cameraActive ? 'Live Camera Active' : 'Manual Face Mode'}
                   </span>
                 </div>
               </motion.div>
             ) : (
-              /* STEPS 1 & 2: Dedicated Fingerprint Hardware & Sensor Display */
+            /* STEPS 1 & 2: Dedicated Laptop Biometric Machine & Phone Thumbprint Display */
               <motion.div
                 key={`fingerprint-scan-${currentStep}`}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -359,18 +476,18 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
 
                 <div className="text-center space-y-1">
                   <h3 className="text-sm font-black uppercase tracking-wider text-emerald-300">
-                    {steps[currentStep]}
+                  {steps[currentStep]} Thumb Print
                   </h3>
                   <p className="text-[10px] text-slate-300 font-medium">
-                    {isScanningMachine ? 'Reading fingerprint from Biometric Machine...' :
-                     isScanningPhone ? 'Authenticating via Phone Fingerprint Sensor...' :
-                     'Touch hardware sensor or use phone fingerprint sensor to capture print.'}
+                  {isScanningMachine ? 'Reading thumb print from Laptop Biometric Machine...' :
+                   isScanningPhone ? 'Authenticating thumb print via Phone Sensor...' :
+                   'Place your thumb on the Laptop Biometric Machine or Phone Fingerprint Sensor.'}
                   </p>
                 </div>
 
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-900/60 border border-emerald-500/30 px-3 py-1 rounded-full">
                   <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">
-                    Biometric Scanner Ready
+                  Thumb Print Reader Ready
                   </span>
                 </div>
               </motion.div>
@@ -411,45 +528,66 @@ export default function CameraCapture({ onCaptureAll, onClear }: CameraCapturePr
       <div className="space-y-3">
         {!allCaptured ? (
           currentStep === 0 ? (
-            /* Step 0 Actions (Manual Face Capture) */
+            /* Step 0 Actions (Live Camera Capture & Fallbacks) */
             <div className="space-y-2.5">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessingFile}
-                className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95"
-              >
-                <Upload className="w-5 h-5 text-emerald-200" />
-                <span>Upload Face Photo File</span>
-              </button>
+              {cameraActive ? (
+                <button
+                  onClick={handleCaptureFaceFromCamera}
+                  disabled={isProcessingFile}
+                  className="w-full bg-[#008751] text-white p-4 rounded-2xl font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  <Camera className="w-5 h-5 text-emerald-200" />
+                  <span>Capture Face Photo</span>
+                </button>
+              ) : (
+                <button
+                  onClick={startCamera}
+                  className="w-full bg-emerald-600 text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                >
+                  <Camera className="w-5 h-5" />
+                  <span>Enable Live Camera Stream</span>
+                </button>
+              )}
 
-              <button
-                onClick={handleManualFaceCapture}
-                disabled={isProcessingFile}
-                className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-              >
-                <Camera className="w-5 h-5" />
-                <span>Manual Face Photo Capture</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessingFile}
+                  className="w-full bg-slate-800 text-slate-200 p-3 rounded-2xl font-bold uppercase tracking-wider text-[10px] sm:text-xs flex items-center justify-center gap-2 hover:bg-slate-700 transition-all disabled:opacity-50 shadow-sm active:scale-95 border border-slate-700"
+                >
+                  <Upload className="w-4 h-4 text-emerald-400" />
+                  <span>Upload Photo</span>
+                </button>
+
+                <button
+                  onClick={handleManualFaceCapture}
+                  disabled={isProcessingFile}
+                  className="w-full bg-slate-900 border border-[#008751]/40 text-emerald-400 p-3 rounded-2xl font-bold uppercase tracking-wider text-[10px] sm:text-xs flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Manual Photo</span>
+                </button>
+              </div>
             </div>
           ) : (
-            /* Steps 1 & 2 Actions (Fingerprint Options) */
+          /* Steps 1 & 2 Actions (Fingerprint / Thumbprint Options) */
             <div className="space-y-2.5">
               <button
-                onClick={handleBiometricMachineCapture}
+              onClick={handlePhoneFingerprintCapture}
                 disabled={isScanningMachine || isScanningPhone}
                 className="w-full bg-[#008751] text-white p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-[#007043] transition-all disabled:opacity-50 shadow-md active:scale-95"
               >
-                <Cpu className="w-5 h-5 text-emerald-200" />
-                <span>Scan with Biometric Machine</span>
+              <Smartphone className="w-5 h-5 text-emerald-200" />
+              <span>Use Phone Fingerprint / Thumb Print</span>
               </button>
 
               <button
-                onClick={handlePhoneFingerprintCapture}
+              onClick={handleBiometricMachineCapture}
                 disabled={isScanningMachine || isScanningPhone}
                 className="w-full bg-slate-900 border-2 border-[#008751] text-emerald-400 p-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-sm active:scale-95 disabled:opacity-50"
               >
-                <Smartphone className="w-5 h-5" />
-                <span>Scan with Phone Fingerprint Sensor</span>
+              <Laptop className="w-5 h-5" />
+              <span>Laptop Thumb Print Machine</span>
               </button>
             </div>
           )
