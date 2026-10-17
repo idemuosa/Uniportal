@@ -50,7 +50,7 @@ export default function Auth() {
         localStorage.setItem('refresh_token', response.data.refresh);
         
         toast.success('Login successful');
-        window.location.href = '/';
+        navigate('/');
       } else {
         // Validation for Registration
         if (password !== confirmPassword) {
