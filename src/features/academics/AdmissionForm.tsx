@@ -129,7 +129,8 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
       const payload = {
         type: formData.type || 'Undergraduate Full-Time',
         faculty: facultyId,
-        department: departmentId,
+        department: formData.department || departmentId,
+        departmentName: formData.department,
         gender: formData.gender,
         date_of_birth: formData.dateOfBirth,
         phone_number: formData.phoneNumber,
@@ -181,7 +182,9 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
       formData.jambSubjects?.filter(s => s.subject).map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`);
 
     const candidateData: CandidateData = {
-      candidateId: application.id ? `LUK-ADM-${application.id}` : undefined,
+      candidateId: application.id
+        ? (application.id.startsWith('LUK-ADM-') ? application.id : `LUK-ADM-${application.id}`)
+        : undefined,
       name: user.name,
       email: user.email,
       role: 'Admission Candidate',

@@ -70,7 +70,7 @@ const Attendance = sequelize.define('Attendance', {
 });
 
 const Application = sequelize.define('Application', {
-  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  id: { type: DataTypes.STRING, primaryKey: true },
   uid: { type: DataTypes.STRING },
   type: { type: DataTypes.STRING },
   faculty: { type: DataTypes.STRING },
