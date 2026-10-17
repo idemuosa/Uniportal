@@ -91,14 +91,25 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://")):
     import urllib.parse
     url = urllib.parse.urlparse(DATABASE_URL)
+    db_name = url.path[1:] if url.path else 'uniportal'
+    if '?' in db_name:
+        db_name = db_name.split('?')[0]
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": url.path[1:],
-            "USER": url.username,
-            "PASSWORD": url.password,
+            "NAME": urllib.parse.unquote(db_name),
+            "USER": urllib.parse.unquote(url.username or ''),
+            "PASSWORD": urllib.parse.unquote(url.password or ''),
             "HOST": url.hostname,
             "PORT": url.port or 5432,
+        }
+    }
+elif DATABASE_URL and (DATABASE_URL.startswith("sqlite://") or DATABASE_URL.startswith("sqlite:")):
+    sqlite_path = DATABASE_URL.replace("sqlite://", "").replace("sqlite:", "") or "uniportal.sqlite"
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / sqlite_path,
         }
     }
 else:

@@ -1035,19 +1035,33 @@ app.get('*', (req, res) => {
 // ------------------------------------------------------------------
 async function seedDefaultAdmin() {
   try {
-    const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin_user@example.com';
+    const adminEmail = (process.env.ADMIN_EMAIL || process.env.DEFAULT_ADMIN_EMAIL || 'admin_user@example.com').toLowerCase().trim();
     const adminUsername = adminEmail;
-    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'AdminPassword123!';
+    const adminPass = process.env.ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD || 'AdminPassword123!';
 
     const existingAdmin = await User.findOne({
       where: {
-        [Op.or]: [{ email: adminEmail }, { username: adminUsername }]
+        [Op.or]: [
+          { email: adminEmail },
+          { username: adminUsername },
+          { email: 'admin_user@example.com' },
+          { username: 'admin_user' },
+          { role: 'admin' }
+        ]
       }
     });
 
-    if (!existingAdmin) {
+    const hashedPassword = hashPassword(adminPass);
+
+    if (existingAdmin) {
+      existingAdmin.email = adminEmail;
+      existingAdmin.username = adminUsername;
+      existingAdmin.password = hashedPassword;
+      existingAdmin.role = 'admin';
+      await existingAdmin.save();
+      logger.info(`🔑 Default admin account updated & synchronized: ${adminEmail}`);
+    } else {
       const uid = 'usr_admin_default_2026';
-      const hashedPassword = hashPassword(adminPass);
       await User.create({
         uid,
         username: adminUsername,
@@ -1059,7 +1073,7 @@ async function seedDefaultAdmin() {
         role: 'admin',
         level: 'Staff'
       });
-      logger.info(`🔑 Default admin account synchronized: ${adminEmail}`);
+      logger.info(`🔑 Default admin account created: ${adminEmail}`);
     }
   } catch (error) {
     logger.error('Error seeding default admin account:', error);
