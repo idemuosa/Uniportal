@@ -94,16 +94,8 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
     }
 
     try {
-      const subjectsList = stream === 'Direct Entry'
-        ? ['General Aptitude & Advanced Studies']
-        : jambSubjectsStr.split(',').map(s => s.trim()).filter(Boolean);
-
       const res = await api.post('/academics/entrance-exams/start', {
-        registrationNumber: regNo.trim(),
-        stream,
-        subjects: subjectsList,
-        faculty,
-        department
+        registrationNumber: regNo.trim()
       });
 
       if (res.data.alreadyTaken) {
@@ -112,6 +104,10 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
         setExamStep('submitted');
         return;
       }
+
+      if (res.data.stream) setStream(res.data.stream);
+      if (res.data.faculty) setFaculty(res.data.faculty);
+      if (res.data.department) setDepartment(res.data.department);
 
       const qList: Question[] = res.data.questions;
       if (qList.length === 0) {
@@ -242,92 +238,20 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
               </p>
             </div>
 
-            {/* Stream Selector */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setStream('JAMB')}
-                className={`p-5 rounded-2xl border text-left transition-all ${
-                  stream === 'JAMB'
-                    ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-black shadow-sm'
-                    : 'border-slate-200 bg-slate-50 text-slate-500 font-bold hover:border-slate-300'
-                }`}
-              >
-                <p className="text-[10px] uppercase tracking-wider text-emerald-600 font-black">UTME / JAMB Stream</p>
-                <p className="text-sm font-black mt-1">JAMB Entrance Exam</p>
-                <p className="text-[10px] text-slate-400 font-normal mt-1">Exam aligned with your enrolled JAMB subjects</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStream('Direct Entry')}
-                className={`p-5 rounded-2xl border text-left transition-all ${
-                  stream === 'Direct Entry'
-                    ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-black shadow-sm'
-                    : 'border-slate-200 bg-slate-50 text-slate-500 font-bold hover:border-slate-300'
-                }`}
-              >
-                <p className="text-[10px] uppercase tracking-wider text-emerald-600 font-black">Direct Entry Stream</p>
-                <p className="text-sm font-black mt-1">Direct Entry Entrance Exam</p>
-                <p className="text-[10px] text-slate-400 font-normal mt-1">For applicants without JAMB entering 200 Level</p>
-              </button>
-            </div>
-
             {/* Registration Inputs */}
             <div className="space-y-4 pt-2">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  {stream === 'JAMB' ? 'Admission Reg Number / JAMB Reg Number' : 'Direct Entry CBT Number / Application ID'}
+                  Admission Reg Number / JAMB Reg Number
                 </label>
                 <input
                   type="text"
-                  placeholder={stream === 'JAMB' ? 'e.g. 202510928374AB or LUK-ADM-...' : 'e.g. DE-2025-88392 or LUK-ADM-...'}
+                  placeholder="e.g. 202510928374AB or LUK-ADM-..."
                   value={regNo}
                   onChange={e => setRegNo(e.target.value)}
                   className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Full Candidate Name</label>
-                  <input
-                    type="text"
-                    placeholder="Candidate Name"
-                    value={candidateName}
-                    onChange={e => setCandidateName(e.target.value)}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="candidate@email.com"
-                    value={candidateEmail}
-                    onChange={e => setCandidateEmail(e.target.value)}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              {stream === 'JAMB' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Enrolled JAMB Subjects (Comma Separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={jambSubjectsStr}
-                    onChange={e => setJambSubjectsStr(e.target.value)}
-                    placeholder="English Language, Mathematics, Physics, Chemistry"
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Your entrance CBT will be generated specifically matching these subjects.
-                  </p>
-                </div>
-              )}
             </div>
 
             <button
