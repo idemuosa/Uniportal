@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { UserProfile } from '../../types';
 import api from '../../api/axios';
 import { toast } from 'sonner';
@@ -23,11 +24,14 @@ interface EntranceExamPortalProps {
 }
 
 export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
+  const [searchParams] = useSearchParams();
+  const initialRegNo = searchParams.get('regNo') || user?.jambRegNo || '';
+
   // Step 1: Login/Reg No Entry -> Step 2: Taking CBT Exam -> Step 3: Result Summary
   const [examStep, setExamStep] = useState<'login' | 'exam' | 'submitted'>('login');
 
   // Registration & Stream Config
-  const [regNo, setRegNo] = useState(user?.jambRegNo || '');
+  const [regNo, setRegNo] = useState(initialRegNo);
   const [stream, setStream] = useState<'JAMB' | 'Direct Entry'>('JAMB');
   const [candidateName, setCandidateName] = useState(user?.name || '');
   const [candidateEmail, setCandidateEmail] = useState(user?.email || '');
@@ -63,10 +67,11 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
 
   // Load candidate's existing result if already taken on mount
   useEffect(() => {
-    if (user?.jambRegNo || user?.uid) {
-      checkExistingResult(user.jambRegNo || '', user.uid);
+    const activeReg = searchParams.get('regNo') || user?.jambRegNo || '';
+    if (activeReg || user?.uid) {
+      checkExistingResult(activeReg, user?.uid);
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const checkExistingResult = async (reg: string, uidStr?: string) => {
     try {
@@ -84,7 +89,7 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
 
   const handleStartExam = async () => {
     if (!regNo.trim()) {
-      toast.error('Please enter your JAMB Registration Number or Direct Entry CBT Number');
+      toast.error('Please enter your Admission Registration Number or JAMB Registration Number');
       return;
     }
 
@@ -233,7 +238,7 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
                 Candidate CBT Verification
               </h2>
               <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
-                Enter your JAMB Registration Number or Direct Entry CBT Reg Number to access your customized entrance exam.
+                Enter your Admission Registration Number (e.g. LUK-ADM-...) or JAMB Registration Number to access your customized entrance examination player.
               </p>
             </div>
 
@@ -272,11 +277,11 @@ export default function EntranceExamPortal({ user }: EntranceExamPortalProps) {
             <div className="space-y-4 pt-2">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  {stream === 'JAMB' ? 'JAMB Registration Number' : 'Direct Entry CBT Number / Application ID'}
+                  {stream === 'JAMB' ? 'Admission Reg Number / JAMB Reg Number' : 'Direct Entry CBT Number / Application ID'}
                 </label>
                 <input
                   type="text"
-                  placeholder={stream === 'JAMB' ? 'e.g. 202510928374AB' : 'e.g. DE-2025-88392'}
+                  placeholder={stream === 'JAMB' ? 'e.g. 202510928374AB or LUK-ADM-...' : 'e.g. DE-2025-88392 or LUK-ADM-...'}
                   value={regNo}
                   onChange={e => setRegNo(e.target.value)}
                   className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { UserProfile, AdmissionApplication } from '../../types';
 import api from '../../api/axios';
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FACULTIES, DEPARTMENTS } from '../../constants';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown, Printer } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Upload, AlertCircle, ArrowRight, User, GraduationCap, ShieldCheck, MapPin, Phone, HeartPulse, HardDrive, Fingerprint, Search, Bell, ChevronDown, Printer, PlayCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CameraCapture from '../../components/CameraCapture';
 import CandidateRegistrationSlip, { CandidateData } from '../../components/CandidateRegistrationSlip';
@@ -227,13 +228,19 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
               Your application is currently being analyzed by the Central Admission Committee. Credentials and biometrics are under verification.
             </p>
 
-            <div className="pt-4 flex justify-center">
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => setShowSlipModal(true)}
                 className="bg-[#008751] hover:bg-[#006e41] text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95"
               >
                 <Printer className="w-5 h-5" /> Print Application Slip (PDF)
               </button>
+              <Link
+                to={`/entrance-exam?regNo=${encodeURIComponent(candidateData.jambRegNo || candidateData.candidateId || '')}`}
+                className="bg-emerald-800 hover:bg-emerald-900 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg active:scale-95 border border-emerald-400/30"
+              >
+                <PlayCircle className="w-5 h-5 text-emerald-300" /> Enter Examination Player (CBT)
+              </Link>
             </div>
           </div>
         </div>
