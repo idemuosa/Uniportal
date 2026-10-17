@@ -83,9 +83,11 @@ export default function App() {
   const SECRET_ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || "lukke-core-admin-002";
 
   return (
-    <Router>
-      <Toaster position="top-right" richColors />
-      <Layout user={user}>
+    <AuthProvider>
+      <Router>
+        <Toaster position="top-right" richColors />
+        <ErrorBoundary>
+          <Layout user={user}>
         <Routes>
           <Route path="/" element={<Home user={user} />} />
           <Route path="/auth" element={<Auth onLoginSuccess={setUser} />} />
