@@ -40,6 +40,25 @@ docker-compose up --build
    - Add your `GOOGLE_AI_KEY` and `DATABASE_URL`.
    - Place `serviceAccountKey.json` in the root.
 
+### 🌐 Setting Environment Variables for Deployment
+
+#### 1. Backend Web Service (`server.js` / `websocket_server.js`)
+Set runtime environment variables on your hosting provider (Render, Railway, Heroku, AWS, DigitalOcean, etc.) or in `.env`:
+- `PORT`: Port for Express & Socket.io server (default: `5000`)
+- `WS_PORT`: Port for standalone WebSocket server (default: `8080`)
+- `CORS_ORIGIN`: Allowed origins (e.g. `https://yourdomain.com` or `*`)
+- `DATABASE_URL`: PostgreSQL connection string
+
+#### 2. Frontend Static Files (Vite / React)
+Vite environment variables prefixed with `VITE_` are embedded into the client bundle **at build time**:
+- `VITE_API_URL`: Backend API base URL (e.g. `https://api.yourdomain.com`)
+- `VITE_SOCKET_URL`: Socket.io server URL (e.g. `https://api.yourdomain.com`)
+
+*Build static assets with env variables:*
+```bash
+VITE_API_URL=https://api.yourdomain.com VITE_SOCKET_URL=https://api.yourdomain.com npm run build
+```
+
 3. **Launch Everything:**
    ```bash
    npm run dev:all
