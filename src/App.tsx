@@ -19,6 +19,7 @@ import HostelAllocation from './features/hostel/HostelAllocation';
 import Results from './features/academics/Results';
 import LoanApplicationForm from './features/finances/LoanApplicationForm';
 import Auth from './features/auth/Auth';
+import EntranceExamPortal from './features/academics/EntranceExamPortal';
 import RemitaPayment from './features/finances/RemitaPayment';
 import { Toaster, toast } from 'sonner';
 import { ShieldCheck } from 'lucide-react';
@@ -87,6 +88,7 @@ export default function App() {
           {/* 🔐 HIDDEN ADMIN ENTRY: Only accessible via the secret path */}
           <Route path={`/${SECRET_ADMIN_PATH}`} element={<AdminAuth />} />
 
+          <Route path="/entrance-exam" element={<EntranceExamPortal user={user} />} />
           <Route path="/admission" element={user ? <AdmissionForm user={user} /> : <Navigate to="/auth" />} />
           <Route path="/portal" element={(simulatedUser || user)?.role === 'student' ? <StudentPortal user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />
           <Route path="/courses" element={(simulatedUser || user)?.role === 'student' ? <CourseRegistration user={(simulatedUser || user)!} /> : <Navigate to="/auth" />} />

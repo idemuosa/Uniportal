@@ -21,7 +21,21 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loans, setLoans] = useState<LoanApplication[]>([]);
-  const [activeTab, setActiveTab] = useState<'management' | 'applications' | 'students' | 'courses' | 'treasury' | 'loans' | 'setup'>('management');
+  const [activeTab, setActiveTab] = useState<'management' | 'applications' | 'students' | 'courses' | 'treasury' | 'loans' | 'setup' | 'exams'>('management');
+
+  // Entrance Exam CBT Admin State
+  const [examSubmissions, setExamSubmissions] = useState<any[]>([]);
+  const [releasingId, setReleasingId] = useState<string | null>(null);
+  const [newQuestion, setNewQuestion] = useState({
+    stream: 'JAMB',
+    subject: 'English Language',
+    question: '',
+    optionA: '',
+    optionB: '',
+    optionC: '',
+    optionD: '',
+    correctAnswer: 0
+  });
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
 
@@ -59,6 +73,7 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
         ]);
 
         setApplications(appsRes.data);
+        fetchExamSubmissions();
         setStudents(studentsRes.data.map((u: any) => ({
           uid: u.id.toString(),
           email: u.email,
@@ -93,6 +108,58 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
 
     fetchData();
   }, []);
+
+  const fetchExamSubmissions = async () => {
+    try {
+      const res = await api.get('/academics/entrance-exams/submissions');
+      setExamSubmissions(res.data);
+    } catch (e) {
+      console.warn('Exam submissions fetch warning:', e);
+    }
+  };
+
+  const handleReleaseExamResult = async (subId: string) => {
+    setReleasingId(subId);
+    try {
+      const res = await api.post(`/academics/entrance-exams/release/${subId}`);
+      toast.success(res.data.message || 'Result released & admission guaranteed!');
+      fetchExamSubmissions();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to release result');
+    } finally {
+      setReleasingId(null);
+    }
+  };
+
+  const handleAddQuestion = async () => {
+    if (!newQuestion.question.trim() || !newQuestion.optionA || !newQuestion.optionB) {
+      toast.error('Please enter question text and at least options A and B');
+      return;
+    }
+
+    try {
+      await api.post('/academics/entrance-exams/questions', {
+        stream: newQuestion.stream,
+        subject: newQuestion.subject,
+        question: newQuestion.question,
+        options: [newQuestion.optionA, newQuestion.optionB, newQuestion.optionC, newQuestion.optionD].filter(Boolean),
+        correctAnswer: newQuestion.correctAnswer
+      });
+      toast.success('Entrance exam question added successfully!');
+      setNewQuestion({
+        stream: 'JAMB',
+        subject: 'English Language',
+        question: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correctAnswer: 0
+      });
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to add question');
+    }
+  };
 
   // [Handlers kept same as before for functionality]
   const handleApprove = async (app: AdmissionApplication) => {
@@ -152,13 +219,13 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
           </div>
 
           <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide">
-            {(['management', 'applications', 'students', 'courses', 'treasury', 'loans', 'setup'] as const).map(tab => (
+            {(['management', 'applications', 'exams', 'students', 'courses', 'treasury', 'loans', 'setup'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-white text-emerald-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${activeTab === tab ? 'bg-white text-emerald-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                {tab}
+                {tab === 'exams' ? 'Entrance Exams & CBT' : tab}
               </button>
             ))}
           </div>
@@ -191,6 +258,197 @@ export default function AdminDashboard({ user, onSimulateLogin }: AdminDashboard
 
             {/* TAB CONTENT AREA */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+              {activeTab === 'exams' && (
+                <div className="p-8 space-y-12">
+                  {/* SECTION 1: CANDIDATE EXAM SUBMISSIONS */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                          <Award className="w-5 h-5 text-emerald-500" /> Entrance Exam Submissions & Admission Guarantees
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Review CBT submissions from UTME and Direct Entry candidates and release results to guarantee admission.
+                        </p>
+                      </div>
+                      <button
+                        onClick={fetchExamSubmissions}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+
+                    <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50">
+                            <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Candidate & Reg No</th>
+                            <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Stream</th>
+                            <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">CBT Score</th>
+                            <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider">Status</th>
+                            <th className="p-4 font-bold text-xs text-slate-400 uppercase tracking-wider text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {examSubmissions.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-xs text-slate-400 font-bold uppercase tracking-wider">
+                                No entrance exam submissions recorded yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            examSubmissions.map((sub: any) => (
+                              <tr key={sub.id} className="hover:bg-slate-50/80 transition-all">
+                                <td className="p-4">
+                                  <p className="font-bold text-slate-900">{sub.candidateName || 'Candidate'}</p>
+                                  <p className="text-xs text-emerald-600 font-mono font-black">{sub.registrationNumber}</p>
+                                </td>
+                                <td className="p-4">
+                                  <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-[10px] font-black uppercase">
+                                    {sub.stream || 'JAMB'}
+                                  </span>
+                                </td>
+                                <td className="p-4">
+                                  <p className="text-sm font-black text-slate-900">{sub.percentage}%</p>
+                                  <p className="text-[10px] text-slate-400 font-medium">
+                                    {sub.totalScore}/{sub.maxScore} pts
+                                  </p>
+                                </td>
+                                <td className="p-4">
+                                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                                    sub.admissionGuaranteed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {sub.admissionGuaranteed ? 'Admission Guaranteed' : sub.status}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right">
+                                  {sub.admissionGuaranteed || sub.status === 'released' ? (
+                                    <span className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
+                                      <CheckCircle className="w-4 h-4" /> Released
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleReleaseExamResult(sub.id)}
+                                      disabled={releasingId === sub.id}
+                                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50"
+                                    >
+                                      {releasingId === sub.id ? 'Releasing...' : 'Release & Guarantee Admission'}
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* SECTION 2: CONFIGURE CBT QUESTIONS FOR DIRECT ENTRY & UTME */}
+                  <div className="space-y-6 pt-6 border-t border-slate-100">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Plus className="w-5 h-5 text-emerald-500" /> Set Direct Entry & UTME Entrance Exam Questions
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Configure questions for Direct Entry applicants (without JAMB) or specific JAMB subjects.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Target Stream</label>
+                          <select
+                            value={newQuestion.stream}
+                            onChange={e => setNewQuestion({ ...newQuestion, stream: e.target.value })}
+                            className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                          >
+                            <option value="JAMB">JAMB / UTME Candidate</option>
+                            <option value="Direct Entry">Direct Entry Candidate (No JAMB)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Subject / Category</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. General Aptitude, Mathematics, English, Biology"
+                            value={newQuestion.subject}
+                            onChange={e => setNewQuestion({ ...newQuestion, subject: e.target.value })}
+                            className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Question Text</label>
+                        <textarea
+                          rows={2}
+                          placeholder="Type the entrance exam question here..."
+                          value={newQuestion.question}
+                          onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          type="text"
+                          placeholder="Option A"
+                          value={newQuestion.optionA}
+                          onChange={e => setNewQuestion({ ...newQuestion, optionA: e.target.value })}
+                          className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Option B"
+                          value={newQuestion.optionB}
+                          onChange={e => setNewQuestion({ ...newQuestion, optionB: e.target.value })}
+                          className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Option C"
+                          value={newQuestion.optionC}
+                          onChange={e => setNewQuestion({ ...newQuestion, optionC: e.target.value })}
+                          className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Option D"
+                          value={newQuestion.optionD}
+                          onChange={e => setNewQuestion({ ...newQuestion, optionD: e.target.value })}
+                          className="p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Correct Option Index</label>
+                        <select
+                          value={newQuestion.correctAnswer}
+                          onChange={e => setNewQuestion({ ...newQuestion, correctAnswer: Number(e.target.value) })}
+                          className="w-full p-3 rounded-xl bg-white border border-slate-200 font-bold text-xs"
+                        >
+                          <option value={0}>Option A is Correct</option>
+                          <option value={1}>Option B is Correct</option>
+                          <option value={2}>Option C is Correct</option>
+                          <option value={3}>Option D is Correct</option>
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={handleAddQuestion}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-md"
+                      >
+                        Add Entrance Question to Question Bank
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'applications' && (
                 <div className="p-8">
                   <h3 className="text-lg font-bold mb-6 flex items-center gap-3"><FileText className="w-5 h-5 text-emerald-500" /> Pending Admissions</h3>

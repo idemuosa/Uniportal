@@ -16,7 +16,7 @@ import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pkg from './database.cjs';
-const { sequelize, Op, User, Payment, Attendance, Application } = pkg;
+const { sequelize, Op, User, Payment, Attendance, Application, EntranceExamQuestion, EntranceExamSubmission } = pkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -557,6 +557,351 @@ app.get(['/api/portal/faculties/', '/api/portal/faculties'], async (req, res) =>
     { name: 'Science', departments: ['Computer Science', 'Mathematics', 'Physics'] },
     { name: 'Engineering', departments: ['Electrical Engineering', 'Mechanical Engineering'] }
   ]);
+});
+
+// ------------------------------------------------------------------
+// 📝 ENTRANCE EXAM & CBT ENDPOINTS
+// ------------------------------------------------------------------
+
+// Default question generator helper if DB questions aren't seeded yet
+const DEFAULT_CBT_QUESTIONS = {
+  'English Language': [
+    { id: 'eng_1', subject: 'English Language', stream: 'JAMB', question: 'Choose the option that best completes the sentence: The committee has completed ___ investigation.', options: ['its', 'it\'s', 'their', 'there'], correctAnswer: 0 },
+    { id: 'eng_2', subject: 'English Language', stream: 'JAMB', question: 'Select the word opposite in meaning to "TRANSIENT".', options: ['Fleeting', 'Permanent', 'Fragile', 'Temporal'], correctAnswer: 1 },
+    { id: 'eng_3', subject: 'English Language', stream: 'JAMB', question: 'Which of the following is a synonym for "METICULOUS"?', options: ['Careless', 'Thorough', 'Hastened', 'Casual'], correctAnswer: 1 }
+  ],
+  'Mathematics': [
+    { id: 'mth_1', subject: 'Mathematics', stream: 'JAMB', question: 'If 2x + 5 = 15, what is the value of x?', options: ['3', '5', '10', '7'], correctAnswer: 1 },
+    { id: 'mth_2', subject: 'Mathematics', stream: 'JAMB', question: 'Evaluate log10(1000).', options: ['1', '2', '3', '4'], correctAnswer: 2 },
+    { id: 'mth_3', subject: 'Mathematics', stream: 'JAMB', question: 'What is the derivative of x^3 with respect to x?', options: ['x^2', '3x^2', '3x', 'x^4 / 4'], correctAnswer: 1 }
+  ],
+  'Physics': [
+    { id: 'phy_1', subject: 'Physics', stream: 'JAMB', question: 'What is the SI unit of electric current?', options: ['Volt', 'Ohm', 'Ampere', 'Watt'], correctAnswer: 2 },
+    { id: 'phy_2', subject: 'Physics', stream: 'JAMB', question: 'Which law states that stress is directly proportional to strain within the elastic limit?', options: ['Newton\'s Law', 'Hooke\'s Law', 'Boyle\'s Law', 'Pascal\'s Law'], correctAnswer: 1 }
+  ],
+  'Chemistry': [
+    { id: 'chm_1', subject: 'Chemistry', stream: 'JAMB', question: 'What is the pH value of pure neutral water at 25°C?', options: ['0', '7', '14', '1'], correctAnswer: 1 },
+    { id: 'chm_2', subject: 'Chemistry', stream: 'JAMB', question: 'Which gas is evolved when zinc reacts with dilute hydrochloric acid?', options: ['Oxygen', 'Hydrogen', 'Chlorine', 'Carbon Dioxide'], correctAnswer: 1 }
+  ],
+  'Biology': [
+    { id: 'bio_1', subject: 'Biology', stream: 'JAMB', question: 'Which organelle is known as the powerhouse of the cell?', options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi Body'], correctAnswer: 1 },
+    { id: 'bio_2', subject: 'Biology', stream: 'JAMB', question: 'Which process in plants converts light energy into chemical energy?', options: ['Respiration', 'Transpiration', 'Photosynthesis', 'Osmosis'], correctAnswer: 2 }
+  ],
+  'Economics': [
+    { id: 'eco_1', subject: 'Economics', stream: 'JAMB', question: 'Opportunity cost is best defined as:', options: ['Total money spent', 'The next best alternative forgone', 'Fixed costs of production', 'Marginal benefit'], correctAnswer: 1 }
+  ],
+  'Direct Entry': [
+    { id: 'de_1', subject: 'General Aptitude & Advanced Studies', stream: 'Direct Entry', question: 'Direct Entry Evaluation: Which research method focuses on numerical data analysis?', options: ['Qualitative', 'Quantitative', 'Ethnographic', 'Philosophical'], correctAnswer: 1 },
+    { id: 'de_2', subject: 'General Aptitude & Advanced Studies', stream: 'Direct Entry', question: 'Identify the fundamental principle of academic integrity in tertiary education.', options: ['Plagiarism', 'Originality and Citation', 'Arbitrary Reasoning', 'Fabrication'], correctAnswer: 1 },
+    { id: 'de_3', subject: 'General Aptitude & Advanced Studies', stream: 'Direct Entry', question: 'What is the primary objective of advanced field synthesis in higher education?', options: ['Rote Memorization', 'Critical Analysis and Problem Solving', 'Passive Reading', 'None of the above'], correctAnswer: 1 }
+  ]
+};
+
+// 1. Get Questions / Filter by Stream or Subject
+app.get(['/api/academics/entrance-exams/questions/', '/api/academics/entrance-exams/questions'], async (req, res) => {
+  try {
+    const { stream, subject } = req.query;
+    const where = {};
+    if (stream) where.stream = stream;
+    if (subject) where.subject = subject;
+
+    const dbQuestions = await EntranceExamQuestion.findAll({ where });
+    if (dbQuestions && dbQuestions.length > 0) {
+      return res.json(dbQuestions);
+    }
+
+    // Return default fallbacks
+    let results = [];
+    if (stream === 'Direct Entry') {
+      results = DEFAULT_CBT_QUESTIONS['Direct Entry'];
+    } else if (subject && DEFAULT_CBT_QUESTIONS[subject]) {
+      results = DEFAULT_CBT_QUESTIONS[subject];
+    } else {
+      results = Object.values(DEFAULT_CBT_QUESTIONS).flat();
+    }
+    res.json(results);
+  } catch (error) {
+    logger.error('Error fetching CBT questions:', error);
+    res.status(500).json({ error: 'Failed to fetch exam questions' });
+  }
+});
+
+// 2. Admin: Add/Set Exam Questions (for Direct Entry or JAMB)
+app.post(['/api/academics/entrance-exams/questions/', '/api/academics/entrance-exams/questions'], authenticate, async (req, res) => {
+  try {
+    const { stream, subject, question, options, correctAnswer, faculty, department } = req.body;
+    if (!question || !options || correctAnswer === undefined) {
+      return res.status(400).json({ error: 'Question, options, and correct answer index required' });
+    }
+
+    const newQuestion = await EntranceExamQuestion.create({
+      stream: stream || 'JAMB',
+      subject: subject || 'General Knowledge',
+      question,
+      options,
+      correctAnswer: Number(correctAnswer),
+      faculty,
+      department
+    });
+
+    res.status(201).json(newQuestion);
+  } catch (error) {
+    logger.error('Error creating question:', error);
+    res.status(500).json({ error: 'Failed to add exam question' });
+  }
+});
+
+// 3. Start Entrance Exam Session by JAMB/CBT Reg Number
+app.post(['/api/academics/entrance-exams/start/', '/api/academics/entrance-exams/start'], async (req, res) => {
+  try {
+    const { registrationNumber, stream, subjects, faculty, department } = req.body;
+    const regNo = (registrationNumber || '').trim();
+
+    if (!regNo) {
+      return res.status(400).json({ error: 'JAMB / Direct Entry CBT Registration Number is required' });
+    }
+
+    // Check if exam was already taken
+    const existingSubmission = await EntranceExamSubmission.findOne({
+      where: { registrationNumber: regNo }
+    });
+
+    if (existingSubmission) {
+      return res.json({
+        alreadyTaken: true,
+        submission: existingSubmission,
+        message: 'Entrance exam has already been completed for this registration number.'
+      });
+    }
+
+    // Gather questions for enrolled subjects or Direct Entry
+    let assembledQuestions = [];
+    if (stream === 'Direct Entry') {
+      const deDbQuestions = await EntranceExamQuestion.findAll({ where: { stream: 'Direct Entry' } });
+      assembledQuestions = deDbQuestions.length > 0 ? deDbQuestions : DEFAULT_CBT_QUESTIONS['Direct Entry'];
+    } else {
+      const activeSubjects = Array.isArray(subjects) && subjects.length > 0
+        ? subjects
+        : ['English Language', 'Mathematics', 'Physics', 'Chemistry'];
+
+      for (const sub of activeSubjects) {
+        const subName = typeof sub === 'string' ? sub : (sub.subject || 'English Language');
+        const dbQs = await EntranceExamQuestion.findAll({ where: { subject: subName } });
+        const qs = dbQs.length > 0 ? dbQs : (DEFAULT_CBT_QUESTIONS[subName] || DEFAULT_CBT_QUESTIONS['English Language']);
+        assembledQuestions = assembledQuestions.concat(qs);
+      }
+    }
+
+    // Strip out correctAnswer from payload sent to candidate for exam integrity
+    const candidateQuestions = assembledQuestions.map((q, idx) => ({
+      id: q.id || `q_${idx}_${Date.now()}`,
+      subject: q.subject || 'General',
+      question: q.question,
+      options: q.options,
+      stream: q.stream || stream || 'JAMB'
+    }));
+
+    res.json({
+      alreadyTaken: false,
+      registrationNumber: regNo,
+      stream: stream || 'JAMB',
+      durationMinutes: stream === 'Direct Entry' ? 45 : 60,
+      questions: candidateQuestions
+    });
+  } catch (error) {
+    logger.error('Error starting entrance exam:', error);
+    res.status(500).json({ error: 'Failed to initialize entrance exam session' });
+  }
+});
+
+// 4. Submit Entrance Exam & Calculate Score
+app.post(['/api/academics/entrance-exams/submit/', '/api/academics/entrance-exams/submit'], async (req, res) => {
+  try {
+    const { registrationNumber, candidateName, candidateEmail, uid, stream, faculty, department, answers } = req.body;
+    const regNo = (registrationNumber || '').trim();
+
+    if (!regNo || !answers || !Array.isArray(answers)) {
+      return res.status(400).json({ error: 'Registration number and answers array required' });
+    }
+
+    // Double-check existing
+    const existing = await EntranceExamSubmission.findOne({ where: { registrationNumber: regNo } });
+    if (existing) {
+      return res.status(400).json({ error: 'Entrance exam already submitted for this registration number.' });
+    }
+
+    let correctCount = 0;
+    const totalQuestions = answers.length;
+    const subjectBreakdown = {};
+
+    for (const ans of answers) {
+      const sub = ans.subject || 'General';
+      if (!subjectBreakdown[sub]) {
+        subjectBreakdown[sub] = { total: 0, correct: 0, score: 0 };
+      }
+      subjectBreakdown[sub].total += 1;
+
+      // Verify answer
+      let isCorrect = false;
+      if (ans.questionId) {
+        const dbQ = await EntranceExamQuestion.findByPk(ans.questionId);
+        if (dbQ) {
+          isCorrect = dbQ.correctAnswer === Number(ans.selectedOption);
+        } else {
+          // Check default questions dictionary
+          const defaultQs = Object.values(DEFAULT_CBT_QUESTIONS).flat();
+          const found = defaultQs.find(q => q.id === ans.questionId);
+          if (found) {
+            isCorrect = found.correctAnswer === Number(ans.selectedOption);
+          }
+        }
+      }
+
+      if (isCorrect) {
+        correctCount += 1;
+        subjectBreakdown[sub].correct += 1;
+      }
+    }
+
+    // Calculate percentage score
+    const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+    // Calculate per-subject percentage
+    Object.keys(subjectBreakdown).forEach(sub => {
+      const item = subjectBreakdown[sub];
+      item.score = item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0;
+    });
+
+    // Create submission record
+    const submission = await EntranceExamSubmission.create({
+      registrationNumber: regNo,
+      candidateName: candidateName || 'Candidate',
+      candidateEmail: candidateEmail || '',
+      uid: uid || null,
+      stream: stream || 'JAMB',
+      faculty: faculty || '',
+      department: department || '',
+      totalScore: correctCount * 10,
+      maxScore: totalQuestions * 10,
+      percentage,
+      subjectScores: subjectBreakdown,
+      answers,
+      status: 'submitted',
+      admissionGuaranteed: false
+    });
+
+    // Notify Real-time socket & Admin
+    io.emit('new_entrance_exam_submission', {
+      id: submission.id,
+      registrationNumber: regNo,
+      candidateName: submission.candidateName,
+      percentage
+    });
+
+    res.status(201).json({
+      message: 'Entrance exam submitted successfully!',
+      submission
+    });
+  } catch (error) {
+    logger.error('Error submitting exam:', error);
+    res.status(500).json({ error: 'Failed to submit entrance exam' });
+  }
+});
+
+// 5. Admin: List Exam Submissions
+app.get(['/api/academics/entrance-exams/submissions/', '/api/academics/entrance-exams/submissions'], authenticate, async (req, res) => {
+  try {
+    const submissions = await EntranceExamSubmission.findAll({
+      order: [['submittedAt', 'DESC']]
+    });
+    res.json(submissions);
+  } catch (error) {
+    logger.error('Error fetching submissions:', error);
+    res.status(500).json({ error: 'Failed to fetch CBT submissions' });
+  }
+});
+
+// 6. Admin: Release Result to Student Portal & Guarantee Admission
+app.post(['/api/academics/entrance-exams/release/:id/', '/api/academics/entrance-exams/release/:id'], authenticate, async (req, res) => {
+  try {
+    const submission = await EntranceExamSubmission.findByPk(req.params.id);
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    submission.status = 'released';
+    submission.admissionGuaranteed = true;
+    submission.releasedAt = new Date();
+    await submission.save();
+
+    // Find and update candidate's Application status if exists
+    if (submission.uid || submission.registrationNumber) {
+      const appRecord = await Application.findOne({
+        where: {
+          [Op.or]: [
+            { uid: submission.uid || '' },
+            { id: submission.uid || '' }
+          ]
+        }
+      });
+      if (appRecord) {
+        appRecord.status = 'approved';
+        await appRecord.save();
+      }
+    }
+
+    // Send email notification to student
+    if (submission.candidateEmail) {
+      try {
+        await sendOfficialEmail({
+          to: submission.candidateEmail,
+          subject: 'Official Entrance Exam Result & Admission Guarantee',
+          body: `
+            <p>Dear <b>${submission.candidateName}</b>,</p>
+            <p>Your Entrance Exam result for Reg No: <b>${submission.registrationNumber}</b> has been released!</p>
+            <p><b>Score:</b> ${submission.percentage}%</p>
+            <p><b>Admission Guarantee Status:</b> <span style="color:#059669; font-weight:bold;">GUARANTEED & APPROVED</span></p>
+            <p>Please log in to your Student Portal to view your complete breakdown and print your Official Admission Guarantee Letter.</p>
+          `
+        });
+      } catch (e) {
+        logger.warn('Failed to send result email:', e);
+      }
+    }
+
+    res.json({
+      message: 'Result released and admission guaranteed successfully!',
+      submission
+    });
+  } catch (error) {
+    logger.error('Error releasing result:', error);
+    res.status(500).json({ error: 'Failed to release exam result' });
+  }
+});
+
+// 7. Student/Applicant: Get Released Result & Admission Guarantee
+app.get(['/api/academics/entrance-exams/my-result/', '/api/academics/entrance-exams/my-result'], async (req, res) => {
+  try {
+    const { regNo, uid } = req.query;
+    let where = {};
+    if (regNo) {
+      where.registrationNumber = regNo.trim();
+    } else if (uid) {
+      where.uid = uid;
+    } else {
+      return res.status(400).json({ error: 'Registration number or User ID required' });
+    }
+
+    const submission = await EntranceExamSubmission.findOne({ where });
+    if (!submission) {
+      return res.status(404).json({ error: 'No entrance exam submission found for this registration number' });
+    }
+
+    res.json(submission);
+  } catch (error) {
+    logger.error('Error getting candidate result:', error);
+    res.status(500).json({ error: 'Failed to fetch exam result' });
+  }
 });
 
 // Notifications / Email Dispatch
