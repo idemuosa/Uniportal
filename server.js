@@ -433,18 +433,36 @@ app.get(['/api/academics/applications/', '/api/academics/applications'], authent
   }
 });
 
+function generateAdmissionId(departmentName) {
+  let deptCode = 'AD';
+  if (departmentName && typeof departmentName === 'string') {
+    const clean = departmentName.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    if (clean.length >= 3) {
+      deptCode = clean[0] + clean[2];
+    } else if (clean.length >= 1) {
+      deptCode = clean[0] + (clean[1] || clean[0]);
+    }
+  }
+  const digits = Math.floor(600000 + Math.random() * 100000);
+  return `LUK-ADM-${deptCode}${digits}`;
+}
+
 app.post(['/api/academics/applications/', '/api/academics/applications'], authenticate, async (req, res) => {
   try {
+    const deptName = req.body.departmentName || req.body.department || req.body.formData?.department || '';
+    const appId = generateAdmissionId(deptName);
     const appRecord = await Application.create({
+      id: appId,
       uid: req.user.uid,
       type: req.body.type || 'undergraduate',
       faculty: req.body.faculty,
-      department: req.body.department,
+      department: req.body.department || deptName,
       status: 'pending',
-      formData: req.body
+      formData: { ...req.body, generatedAppId: appId }
     });
     res.status(201).json(appRecord);
   } catch (error) {
+    console.error('Application creation error:', error);
     res.status(500).json({ error: 'Application creation failed' });
   }
 });

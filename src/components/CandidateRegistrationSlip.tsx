@@ -28,7 +28,17 @@ interface CandidateRegistrationSlipProps {
 }
 
 export default function CandidateRegistrationSlip({ candidate, onClose }: CandidateRegistrationSlipProps) {
-  const regId = candidate.candidateId || `LUK-REG-${Math.floor(100000 + Math.random() * 900000)}`;
+  const getFallbackRegId = () => {
+    if (candidate.candidateId) return candidate.candidateId;
+    let deptCode = 'AD';
+    if (candidate.department) {
+      const clean = candidate.department.replace(/[^a-zA-Z]/g, '').toUpperCase();
+      if (clean.length >= 3) deptCode = clean[0] + clean[2];
+      else if (clean.length >= 1) deptCode = clean[0] + (clean[1] || clean[0]);
+    }
+    return `LUK-ADM-${deptCode}${Math.floor(600000 + Math.random() * 100000)}`;
+  };
+  const regId = getFallbackRegId();
   const regDate = candidate.registrationDate || new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
