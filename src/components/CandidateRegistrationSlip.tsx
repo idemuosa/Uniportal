@@ -13,8 +13,13 @@ export interface CandidateData {
   jambRegNo?: string;
   jambScore?: number;
   phoneNumber?: string;
+  address?: string;
+  stateOfOrigin?: string;
+  lga?: string;
+  city?: string;
   gender?: string;
   status?: string;
+  subjectsEnrolled?: string[] | string;
 }
 
 interface CandidateRegistrationSlipProps {
@@ -186,17 +191,10 @@ export default function CandidateRegistrationSlip({ candidate, onClose }: Candid
                   </div>
                 )}
 
-                {candidate.jambScore ? (
+                {candidate.jambScore !== undefined && candidate.jambScore !== null && (
                   <div>
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">JAMB Aggregate Score</span>
                     <span className="font-bold text-[#008751]">{candidate.jambScore} Marks</span>
-                  </div>
-                ) : null}
-
-                {candidate.gender && (
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gender</span>
-                    <span className="font-semibold text-slate-700">{candidate.gender}</span>
                   </div>
                 )}
 
@@ -206,10 +204,72 @@ export default function CandidateRegistrationSlip({ candidate, onClose }: Candid
                     <span className="font-semibold text-slate-700">{candidate.phoneNumber}</span>
                   </div>
                 )}
+
+                {candidate.address && (
+                  <div className="col-span-2">
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Permanent Address</span>
+                    <span className="font-semibold text-slate-700">{candidate.address}</span>
+                  </div>
+                )}
+
+                {candidate.stateOfOrigin && (
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">State of Origin</span>
+                    <span className="font-semibold text-slate-700">{candidate.stateOfOrigin}</span>
+                  </div>
+                )}
+
+                {candidate.lga && (
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Local Government (LGA)</span>
+                    <span className="font-semibold text-slate-700">{candidate.lga}</span>
+                  </div>
+                )}
+
+                {candidate.city && (
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">City</span>
+                    <span className="font-semibold text-slate-700">{candidate.city}</span>
+                  </div>
+                )}
+
+                {candidate.gender && (
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gender</span>
+                    <span className="font-semibold text-slate-700">{candidate.gender}</span>
+                  </div>
+                )}
               </div>
             </div>
 
           </div>
+
+          {/* Enrolled Subjects / Registered Courses Section */}
+          {candidate.subjectsEnrolled && (
+            <div className="pt-4 border-t border-slate-200 space-y-3">
+              <h2 className="text-xs font-black text-[#008751] uppercase tracking-widest flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-[#008751]" />
+                Enrolled Subjects / Registered Courses
+              </h2>
+              {Array.isArray(candidate.subjectsEnrolled) ? (
+                candidate.subjectsEnrolled.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {candidate.subjectsEnrolled.map((subject, idx) => (
+                      <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-700 text-center">
+                        {subject}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No subjects listed.</p>
+                )
+              ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-semibold text-slate-700">
+                  {candidate.subjectsEnrolled}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Barcode & Verification Footer */}
           <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">

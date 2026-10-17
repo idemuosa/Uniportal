@@ -176,18 +176,26 @@ export default function AdmissionForm({ user }: AdmissionFormProps) {
   if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-[#008751] border-t-transparent rounded-full animate-spin" /></div>;
 
   if (application) {
+    const jambSubList = application.jambSubjects?.map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`) ||
+      formData.jambSubjects?.filter(s => s.subject).map(s => `${s.subject}${s.score ? `: ${s.score}` : ''}`);
+
     const candidateData: CandidateData = {
       candidateId: application.id ? `LUK-ADM-${application.id}` : undefined,
       name: user.name,
       email: user.email,
       role: 'Admission Candidate',
-      programType: application.type,
-      faculty: user.faculty,
-      department: user.department,
-      jambRegNo: application.jambRegNo,
-      jambScore: application.jambScore,
-      phoneNumber: application.phoneNumber,
-      gender: application.gender,
+      programType: application.type || formData.type,
+      faculty: user.faculty || formData.faculty,
+      department: user.department || formData.department,
+      jambRegNo: application.jambRegNo || formData.jambRegNo || user.jambRegNo,
+      jambScore: application.jambScore || formData.jambScore || user.jambScore,
+      phoneNumber: application.phoneNumber || formData.phoneNumber || user.phoneNumber,
+      address: application.permanentAddress || formData.permanentAddress || user.permanentAddress,
+      stateOfOrigin: application.stateOfOrigin || formData.stateOfOrigin || user.stateOfOrigin,
+      lga: application.lga || formData.lga || user.lga,
+      city: application.locationCity || formData.locationCity || user.locationCity,
+      gender: application.gender || formData.gender || user.gender,
+      subjectsEnrolled: jambSubList && jambSubList.length > 0 ? jambSubList : undefined,
       status: `Application ${application.status.toUpperCase()}`,
       registrationDate: application.createdAt ? new Date(application.createdAt).toLocaleDateString() : undefined
     };

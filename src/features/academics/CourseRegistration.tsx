@@ -98,6 +98,11 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
   if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-[#008751] border-t-transparent rounded-full animate-spin" /></div>;
 
   if (registration) {
+    const registeredCourseList = registration.courses.map(code => {
+      const courseInfo = availableCourses.find(c => c.courseCode === code);
+      return courseInfo ? `${code} - ${courseInfo.title} (${courseInfo.units} CU)` : code;
+    });
+
     const candidateData: CandidateData = {
       candidateId: registration.id ? `LUK-REG-${registration.id}` : undefined,
       name: user.name,
@@ -105,6 +110,15 @@ export default function CourseRegistration({ user }: CourseRegistrationProps) {
       role: 'Registered Student Candidate',
       faculty: user.faculty,
       department: user.department,
+      jambRegNo: user.jambRegNo,
+      jambScore: user.jambScore,
+      phoneNumber: user.phoneNumber,
+      address: user.permanentAddress,
+      stateOfOrigin: user.stateOfOrigin,
+      lga: user.lga,
+      city: user.locationCity,
+      gender: user.gender,
+      subjectsEnrolled: registeredCourseList,
       status: registration.isApproved ? 'Senate Approved' : 'Pending Verification',
       registrationDate: registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : undefined
     };
