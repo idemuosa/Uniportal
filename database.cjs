@@ -22,13 +22,12 @@ if (dbUrl && (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql'))) {
 } else if (dbUrl && dbUrl.startsWith('sqlite')) {
   sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: dbUrl.replace(/^sqlite:\/\//, '').replace(/^sqlite:/, '') || './uniportal.sqlite',
+    storage: dbUrl.replace(/^sqlite:\/\//, '').replace(/^sqlite:/, ''),
     logging: false
   });
 } else {
   sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './uniportal.sqlite',
+    dialect: 'postgres',
     logging: false
   });
 }

@@ -104,8 +104,12 @@ if DATABASE_URL and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.star
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "uniportal.sqlite",
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "cbt_w7jg",
+            "USER": "cbt_w7jg_user",
+            "PASSWORD": "",
+            "HOST": "localhost",
+            "PORT": 5432,
         }
     }
 
