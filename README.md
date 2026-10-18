@@ -119,7 +119,46 @@ This repository includes `railway.json` pre-configured to build using the root `
 
 ---
 
-## 🐘 Migrating Local `uniportal.sqlite` to PostgreSQL (Render / Railway)
+### 3. 🎈 Deploying to Fly.io
+
+This repository includes a `fly.toml` configuration ready for Fly.io deployment using the application's multi-stage Docker build.
+
+#### Step-by-Step Deployment on Fly.io:
+
+1. **Install Flyctl & Authenticate:**
+   - Install the Fly CLI: `curl -L https://fly.io/install.sh | sh` (or `brew install flyctl`).
+   - Log in to Fly.io:
+     ```bash
+     fly auth login
+     ```
+
+2. **Create Managed Fly Postgres Database:**
+   - Provision a PostgreSQL database instance on Fly.io:
+     ```bash
+     fly postgres create --name uniportal-db
+     ```
+
+3. **Launch / Register Application:**
+   - Run `fly launch` in the repository root. When prompted:
+     - Keep existing `fly.toml` configuration if prompted.
+     - Attach the Postgres database created in step 2 (or run `fly postgres attach uniportal-db`). Attaching automatically sets the `DATABASE_URL` secret.
+
+4. **Set Environment Secrets:**
+   - Configure required secrets using `fly secrets set`:
+     ```bash
+     fly secrets set JWT_SECRET="your-jwt-secret-key" GOOGLE_AI_KEY="your-gemini-key" ADMIN_EMAIL="admin_user@example.com" ADMIN_PASSWORD="your-secure-admin-password"
+     ```
+
+5. **Deploy the Application:**
+   - Deploy your application:
+     ```bash
+     fly deploy
+     ```
+   - Open your app in the browser: `fly open`.
+
+---
+
+## 🐘 Migrating Local `uniportal.sqlite` to PostgreSQL (Render / Railway / Fly.io)
 
 To migrate existing local SQLite records (`uniportal.sqlite`) to your deployed PostgreSQL database on Render or Railway:
 
