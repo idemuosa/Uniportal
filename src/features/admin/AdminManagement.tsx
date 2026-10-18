@@ -36,13 +36,19 @@ export default function AdminManagement() {
     }
   };
 
-  const updateStatus = async (uid: string, status: string) => {
+  const updateStatus = async (student: any, status: string) => {
     try {
-      await api.patch(`/accounts/users/${uid}/`, { status });
+      const appId = student?.Application?.id || student?.application?.id;
+      if (appId) {
+        await api.patch(`/academics/applications/${appId}/`, { status });
+      } else {
+        await api.patch(`/accounts/users/${student.uid}/`, { isVerified: status === 'approved' });
+      }
       toast.success(`Student status updated to ${status}`);
       fetchData();
-    } catch (error) {
-      toast.error('Update failed');
+    } catch (error: any) {
+      const msg = error?.response?.data?.detail || error?.response?.data?.error || 'Update failed';
+      toast.error(String(msg));
     }
   };
 
@@ -139,8 +145,8 @@ export default function AdminManagement() {
                   </td>
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => updateStatus(student.uid, 'approved')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><CheckCircle className="w-4 h-4" /></button>
-                      <button onClick={() => updateStatus(student.uid, 'rejected')} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"><XCircle className="w-4 h-4" /></button>
+                      <button onClick={() => updateStatus(student, 'approved')} title="Approve Student" className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"><CheckCircle className="w-4 h-4" /></button>
+                      <button onClick={() => updateStatus(student, 'rejected')} title="Reject Student" className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><XCircle className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
