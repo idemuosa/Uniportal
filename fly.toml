@@ -1,23 +1,24 @@
-# fly.toml app configuration file generated for uniportal on 2026-10-18T10:43:29Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# fly.toml app configuration file generated for UniPortal
 
-app = 'uniportal'
-primary_region = 'ams'
+app = "uniportal"
+primary_region = "iad"
 
 [build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "5000"
+  NODE_ENV = "production"
 
 [http_service]
-  internal_port = 8080
+  internal_port = 5000
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
-  processes = ['app']
+  processes = ["app"]
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
+  memory = "1gb"
+  cpu_kind = "shared"
   cpus = 1
-  memory_mb = 256
